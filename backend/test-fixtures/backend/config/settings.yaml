@@ -1,0 +1,8 @@
+digest:
+  time: "09:00"
+  timezone: Asia/Tokyo
+  top_count: 3
+  total_count: 10
+
+cost_alert:
+  daily_usd: 10

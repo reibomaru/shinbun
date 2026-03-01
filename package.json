@@ -2,20 +2,31 @@
   "name": "shinbun",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "prisma": {
-    "schema": "migration/schema.prisma"
+    "schema": "backend/migration/schema.prisma"
   },
   "scripts": {
-    "db:migrate": "prisma migrate dev --schema migration/schema.prisma",
-    "db:studio": "prisma studio --schema migration/schema.prisma",
-    "db:generate": "prisma generate --schema migration/schema.prisma",
-    "db:push": "prisma db push --schema migration/schema.prisma",
-    "db:seed": "prisma db seed"
+    "db:migrate": "prisma migrate dev --schema backend/migration/schema.prisma",
+    "db:studio": "prisma studio --schema backend/migration/schema.prisma",
+    "db:generate": "prisma generate --schema backend/migration/schema.prisma",
+    "db:push": "prisma db push --schema backend/migration/schema.prisma",
+    "db:seed": "prisma db seed",
+    "fetch": "tsx --env-file=.env backend/scripts/fetch.ts",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@prisma/client": "^6.5.0"
+    "@prisma/client": "^6.5.0",
+    "js-yaml": "^4.1.0",
+    "rss-parser": "^3.13.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "prisma": "^6.5.0"
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.3.3",
+    "prisma": "^6.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.18"
   }
 }

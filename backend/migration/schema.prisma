@@ -74,6 +74,7 @@ model Source {
 
   rawEvents RawEvent[]
 
+  @@unique([type, name])
   @@map("source")
 }
 
@@ -90,6 +91,7 @@ model RawEvent {
   items  Item[]
 
   @@unique([sourceId, externalId])
+  @@index([contentHash])
   @@map("raw_event")
 }
 

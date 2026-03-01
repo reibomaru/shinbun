@@ -1,0 +1,9 @@
+entities:
+  - name: TestEntity
+    notify_realtime: true
+    score_boost: 1.5
+
+keywords:
+  - value: "test-keyword"
+    notify_realtime: false
+    score_boost: 1.1

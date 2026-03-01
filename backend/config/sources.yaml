@@ -1,0 +1,33 @@
+sources:
+  - type: github_repo
+    name: Claude Code
+    config:
+      owner: anthropics
+      repo: claude-code
+    polling_interval: 3600
+
+  - type: github_repo
+    name: Next.js
+    config:
+      owner: vercel
+      repo: next.js
+    polling_interval: 3600
+
+  - type: rss
+    name: Zenn トレンド
+    config:
+      url: https://zenn.dev/feed
+    polling_interval: 3600
+
+  - type: rss
+    name: はてなブックマーク IT
+    config:
+      url: https://b.hatena.ne.jp/hotentry/it.rss
+    polling_interval: 3600
+
+  - type: hackernews
+    name: Hacker News
+    config:
+      mode: top
+      min_score: 10
+    polling_interval: 1800

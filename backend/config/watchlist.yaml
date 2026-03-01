@@ -1,0 +1,21 @@
+entities:
+  - name: Anthropic
+    notify_realtime: true
+    score_boost: 1.3
+
+  - name: Next.js
+    notify_realtime: true
+    score_boost: 1.2
+
+  - name: LangChain
+    notify_realtime: false
+    score_boost: 1.2
+
+keywords:
+  - value: "RAG"
+    notify_realtime: false
+    score_boost: 1.2
+
+  - value: "MCP"
+    notify_realtime: false
+    score_boost: 1.2
