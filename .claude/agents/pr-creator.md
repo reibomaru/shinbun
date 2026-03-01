@@ -14,6 +14,21 @@ Your primary job is to create a pull request from the current branch to its base
 
 ## Workflow
 
+### Step 0: Commit Uncommitted Changes
+
+Before anything else, check if there are uncommitted changes (staged or unstaged) or untracked files that should be included in the PR.
+
+1. Run `git status` to check for uncommitted changes and untracked files.
+2. Run `git diff --stat` to see unstaged changes.
+3. Run `git diff --cached --stat` to see staged changes.
+4. If there are changes:
+   a. Run `git log --oneline -5` to check the recent commit style in this repository.
+   b. Run `git diff` and `git diff --cached` to understand the full scope of changes.
+   c. Stage relevant files with `git add <files>` (prefer adding specific files by name rather than `git add -A`). Do NOT stage files that likely contain secrets (`.env`, credentials, etc.).
+   d. Create a commit with a clear, descriptive message following the repository's commit style. End the message with `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`. Use a HEREDOC to pass the commit message.
+   e. If the commit fails due to pre-commit hooks, fix the issue and create a NEW commit (do not amend).
+5. If there are no uncommitted changes, skip this step.
+
 ### Step 1: Determine the Current Branch and Base Branch
 
 1. Run `git branch --show-current` to identify the current branch.
