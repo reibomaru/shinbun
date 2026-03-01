@@ -13,67 +13,53 @@ $ARGUMENTS
 1. `gh pr diff <owner/repo> <pr-number>` でPRの差分を取得する
 2. `gh pr view <owner/repo> <pr-number>` でPRの概要・目的を把握する
 3. Taskツールを使って以下の5つのサブエージェントを**並列**で起動する
+   - 各Taskプロンプトには、取得したdiff全文とPR概要を**必ず含めて渡す**こと
 
 ---
 
-## サブエージェント定義
+## 起動するサブエージェント
 
-各サブエージェントへの共通指示:
-- `gh pr diff <owner/repo> <pr-number>` で差分を取得すること
-- レビュー対象は差分で追加された行（`+` から始まる行）のみとする
-- 指摘は `mcp__github_inline_comment__create_inline_comment` でインラインコメントとして投稿する
-- 軽微な問題や好みの問題はスキップし、重要な問題のみコメントする
-- コメントは日本語で投稿する
+以下のエージェントをTaskツールで並列起動してください。各プロンプトにはdiff全文を含めること。
 
 ### 1. code-quality-reviewer
-**担当**: コード品質レビュー
+`subagent_type: code-quality-reviewer`
 
-以下の観点でレビューしてください:
-- 命名規則の一貫性（変数名・関数名・クラス名）
-- 単一責任の原則の遵守
-- コードの重複（DRY原則）
-- 関数・メソッドの複雑度（ネストの深さ、行数）
-- 適切なエラーハンドリング
+プロンプトに含める内容:
+- リポジトリ: `<owner/repo>`、PR番号: `<pr-number>`
+- PR概要（gh pr viewの結果）
+- diff全文（gh pr diffの結果）
 
 ### 2. performance-reviewer
-**担当**: パフォーマンスレビュー
+`subagent_type: performance-reviewer`
 
-以下の観点でレビューしてください:
-- アルゴリズムの計算量（O記法での問題）
-- N+1クエリ問題
-- 不要な再レンダリングやメモ化の欠如
-- メモリリークの可能性
-- 不要なループや重複した処理
+プロンプトに含める内容:
+- リポジトリ: `<owner/repo>`、PR番号: `<pr-number>`
+- PR概要（gh pr viewの結果）
+- diff全文（gh pr diffの結果）
 
 ### 3. test-coverage-reviewer
-**担当**: テストカバレッジレビュー
+`subagent_type: test-coverage-reviewer`
 
-以下の観点でレビューしてください:
-- 追加されたロジックに対するテストの有無
-- 境界値・エッジケースのテスト
-- テストの可読性と保守性
-- モックの適切な使用
-- テストの独立性（他のテストへの依存）
+プロンプトに含める内容:
+- リポジトリ: `<owner/repo>`、PR番号: `<pr-number>`
+- PR概要（gh pr viewの結果）
+- diff全文（gh pr diffの結果）
 
 ### 4. security-code-reviewer
-**担当**: セキュリティレビュー
+`subagent_type: security-code-reviewer`
 
-以下の観点でレビューしてください（OWASP Top 10を参考に）:
-- SQLインジェクション・コマンドインジェクション
-- XSS（クロスサイトスクリプティング）
-- 認証・認可の不備
-- 機密情報のハードコーディング（APIキー、パスワード等）
-- 入力値のバリデーション不足
+プロンプトに含める内容:
+- リポジトリ: `<owner/repo>`、PR番号: `<pr-number>`
+- PR概要（gh pr viewの結果）
+- diff全文（gh pr diffの結果）
 
 ### 5. documentation-accuracy-reviewer
-**担当**: ドキュメント・コメントレビュー
+`subagent_type: documentation-accuracy-reviewer`
 
-以下の観点でレビューしてください:
-- コメントと実装の不一致
-- 複雑なロジックへのコメント不足
-- 公開APIのドキュメント（JSDoc、型定義等）の正確性
-- READMEや変更履歴の更新漏れ
-- 誤解を招く変数名やコメント
+プロンプトに含める内容:
+- リポジトリ: `<owner/repo>`、PR番号: `<pr-number>`
+- PR概要（gh pr viewの結果）
+- diff全文（gh pr diffの結果）
 
 ---
 
