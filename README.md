@@ -47,21 +47,23 @@ PostgreSQL が `localhost:5432` で起動します（DB 名: `shinbun_dev`、ユ
 
 ### 3. 環境変数の設定
 
-ルートと `mock/` それぞれに `.env` を作成します。
+ルートと `mock/` それぞれに `.env` を作成します。`.env.example` も参照してください。
 
 **ルート (`.env`)** — バッチ処理・Prisma 用:
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/shinbun_dev"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/shinbun_dev?schema=public"
+GITHUB_TOKEN="ghp_..."          # GitHub API 取得用（任意・レート制限回避のため推奨）
+
+# 以下は今後実装予定の機能で使用
 ANTHROPIC_API_KEY="sk-ant-..."
 SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
-GITHUB_TOKEN="ghp_..."          # GitHub RSS 取得用（任意）
 ```
 
 **`mock/.env.local`** — フロントエンド用:
 
 ```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/shinbun_dev"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/shinbun_dev?schema=public"
 ```
 
 ### 4. バックエンド依存パッケージのインストール & DB マイグレーション
@@ -83,7 +85,7 @@ npm run dev
 
 ## 開発コマンド
 
-### フロントエンド (`mock/`)
+### フロントエンド (`mock/` ディレクトリ内で実行)
 
 ```bash
 npm run dev    # 開発サーバー起動
@@ -91,7 +93,7 @@ npm run build  # プロダクションビルド
 npm run lint   # ESLint
 ```
 
-### バックエンド (ルート)
+### バックエンド (ルートディレクトリで実行)
 
 ```bash
 npm run fetch       # 記事フェッチ実行
