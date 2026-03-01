@@ -1,14 +1,14 @@
+import { loadSettings, loadSources } from "../lib/config.js";
 import { prisma } from "../lib/db/client.js";
-import { loadSources, loadSettings } from "../lib/config.js";
-import { normalizeUrl } from "../lib/url.js";
 import { fetchSource } from "../lib/fetchers/index.js";
-import { syncSources, deduplicateEvents, saveEvents } from "../lib/sources.js";
+import type { ClassifyInput } from "../lib/processors/classify.js";
 import { classifyBatch } from "../lib/processors/classify.js";
+import type { SummarizeInput } from "../lib/processors/summarize.js";
 import { summarizeBatch } from "../lib/processors/summarize.js";
 import { calculateImportanceScore } from "../lib/scoring.js";
-import { sendUrgentAlert, sendCostAlert } from "../lib/slack.js";
-import type { ClassifyInput } from "../lib/processors/classify.js";
-import type { SummarizeInput } from "../lib/processors/summarize.js";
+import { sendCostAlert, sendUrgentAlert } from "../lib/slack.js";
+import { deduplicateEvents, saveEvents, syncSources } from "../lib/sources.js";
+import { normalizeUrl } from "../lib/url.js";
 
 const HN_SOURCE_TRUST = 0.8;
 
@@ -92,7 +92,8 @@ async function stage2Classify() {
 
   let relevantCount = 0;
   let totalCost = 0;
-  const urgentItems: Array<{ title: string; url: string; topic: string; importanceScore: number }> = [];
+  const urgentItems: Array<{ title: string; url: string; topic: string; importanceScore: number }> =
+    [];
 
   for (let i = 0; i < unprocessed.length; i++) {
     const rawEvent = unprocessed[i];
@@ -308,7 +309,9 @@ async function main() {
   // Stage 2: Classify
   console.log("\n--- Stage 2: Classify (Gemini Flash Lite) ---");
   const { classified, relevant, totalCost: classifyCost } = await stage2Classify();
-  console.log(`  Classified ${classified}, relevant: ${relevant}, cost: $${classifyCost.toFixed(4)}`);
+  console.log(
+    `  Classified ${classified}, relevant: ${relevant}, cost: $${classifyCost.toFixed(4)}`,
+  );
 
   // Stage 3: Summarize
   console.log("\n--- Stage 3: Summarize (Gemini Flash) ---");
@@ -320,12 +323,13 @@ async function main() {
   await checkCostAlert(totalCost);
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`\n=== fetch-hn completed in ${elapsed}s (total LLM cost: $${totalCost.toFixed(4)}) ===`);
+  console.log(
+    `\n=== fetch-hn completed in ${elapsed}s (total LLM cost: $${totalCost.toFixed(4)}) ===`,
+  );
 }
 
 const isDirectRun =
-  process.argv[1] &&
-  import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+  process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
 
 if (isDirectRun) {
   main()

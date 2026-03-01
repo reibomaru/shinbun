@@ -6,10 +6,7 @@ export interface RetryOptions {
 /**
  * 指数バックオフ付きリトライ
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {},
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const { maxRetries = 5, baseDelayMs = 1000 } = options;
 
   let lastError: unknown;

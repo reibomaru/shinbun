@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
-import { contentHash, normalizeUrl } from "../../url.js";
 import type { RawEventInput } from "../../models/raw-event.js";
+import { contentHash, normalizeUrl } from "../../url.js";
 import type { IRawEventRepository } from "../raw-event-repository.js";
 
 export class PrismaRawEventRepository implements IRawEventRepository {

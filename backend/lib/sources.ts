@@ -1,7 +1,7 @@
-import { prisma } from "./db/client.js";
-import { normalizeUrl, contentHash } from "./url.js";
-import type { SourceConfig, RawEventInput } from "./fetchers/types.js";
 import type { Source } from "@prisma/client";
+import { prisma } from "./db/client.js";
+import type { RawEventInput, SourceConfig } from "./fetchers/types.js";
+import { contentHash, normalizeUrl } from "./url.js";
 
 /**
  * DB の source テーブルと YAML 設定を同期（なければ作成、あれば更新）
@@ -77,10 +77,7 @@ export async function deduplicateEvents(
 /**
  * raw_event テーブルに一括保存（createMany + skipDuplicates）
  */
-export async function saveEvents(
-  sourceId: string,
-  events: RawEventInput[],
-): Promise<number> {
+export async function saveEvents(sourceId: string, events: RawEventInput[]): Promise<number> {
   if (events.length === 0) return 0;
 
   const data = events.map((event) => {

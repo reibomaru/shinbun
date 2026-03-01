@@ -1,7 +1,7 @@
-import { fetchGitHubReleases } from "../fetchers/github.js";
-import { fetchRSS } from "../fetchers/rss.js";
-import { fetchHackerNews } from "../fetchers/hackernews.js";
 import type { SourceConfig } from "../config.js";
+import { fetchGitHubReleases } from "../fetchers/github.js";
+import { fetchHackerNews } from "../fetchers/hackernews.js";
+import { fetchRSS } from "../fetchers/rss.js";
 import type { FetchResult } from "../models/raw-event.js";
 
 /**
@@ -14,10 +14,7 @@ export async function fetchSource(
   const cfg = sourceConfig.config;
   switch (sourceConfig.type) {
     case "github_repo":
-      return fetchGitHubReleases(
-        cfg as { owner: string; repo: string },
-        lastFetchedAt,
-      );
+      return fetchGitHubReleases(cfg as { owner: string; repo: string }, lastFetchedAt);
     case "rss":
       return fetchRSS(cfg as { url: string }, lastFetchedAt);
     case "hackernews":

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // withRetry をリトライなしでパススルー（テスト高速化）
 vi.mock("../retry.js", () => ({
@@ -18,7 +18,7 @@ vi.mock("../gemini.js", () => ({
 }));
 
 import { gemini, MODELS } from "../gemini.js";
-import { summarizeItem, summarizeBatch } from "./summarize.js";
+import { summarizeBatch, summarizeItem } from "./summarize.js";
 
 const mockGenerateContent = gemini.models.generateContent as ReturnType<typeof vi.fn>;
 
@@ -71,11 +71,9 @@ describe("summarizeItem", () => {
   });
 
   it("Flash 失敗時に Flash Lite にフォールバックする", async () => {
-    mockGenerateContent
-      .mockRejectedValueOnce(new Error("Flash overloaded"))
-      .mockResolvedValue({
-        text: JSON.stringify(makeSummaryResponse()),
-      });
+    mockGenerateContent.mockRejectedValueOnce(new Error("Flash overloaded")).mockResolvedValue({
+      text: JSON.stringify(makeSummaryResponse()),
+    });
 
     const result = await summarizeItem({
       title: "Test fallback",

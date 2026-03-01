@@ -1,5 +1,5 @@
-import { loadWatchlist } from "./config.js";
 import type { Watchlist } from "./config.js";
+import { loadWatchlist } from "./config.js";
 
 export interface ScoreInput {
   /** ソース信頼度 (0-1) */
@@ -84,10 +84,7 @@ export function calculateImportanceScore(input: ScoreInput): ScoreResult {
   const engagement = normalizeEngagement(input.engagementScore);
 
   const baseScore =
-    input.sourceTrust * 0.3 +
-    freshness * 0.2 +
-    engagement * 0.2 +
-    input.contentQuality * 0.3;
+    input.sourceTrust * 0.3 + freshness * 0.2 + engagement * 0.2 + input.contentQuality * 0.3;
 
   let bonus = 0;
   const reasons: string[] = [];
@@ -100,7 +97,7 @@ export function calculateImportanceScore(input: ScoreInput): ScoreResult {
 
   // フォーマットボーナス
   if (input.format === "incident") {
-    bonus += 0.10;
+    bonus += 0.1;
     reasons.push("breaking change +10");
   }
 

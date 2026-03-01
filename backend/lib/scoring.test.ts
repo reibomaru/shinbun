@@ -1,21 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./config.js", () => ({
   loadWatchlist: vi.fn().mockReturnValue({
-    entities: [
-      { name: "Anthropic", notify_realtime: true, score_boost: 1.3 },
-    ],
-    keywords: [
-      { value: "RAG", notify_realtime: false, score_boost: 1.2 },
-    ],
+    entities: [{ name: "Anthropic", notify_realtime: true, score_boost: 1.3 }],
+    keywords: [{ value: "RAG", notify_realtime: false, score_boost: 1.2 }],
   }),
 }));
 
 import {
-  normalizeEngagement,
   calculateFreshness,
-  calculateWatchlistBoost,
   calculateImportanceScore,
+  calculateWatchlistBoost,
+  normalizeEngagement,
 } from "./scoring.js";
 
 describe("normalizeEngagement", () => {

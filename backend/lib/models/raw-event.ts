@@ -13,6 +13,4 @@ export interface RawEventInput {
 }
 
 /** フェッチ結果 */
-export type FetchResult =
-  | { ok: true; events: RawEventInput[] }
-  | { ok: false; error: string };
+export type FetchResult = { ok: true; events: RawEventInput[] } | { ok: false; error: string };

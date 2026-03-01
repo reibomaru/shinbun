@@ -1,5 +1,5 @@
-import { z } from "zod";
 import Parser from "rss-parser";
+import { z } from "zod";
 import type { FetchResult, RawEventInput } from "./types.js";
 
 const parser = new Parser();

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const FIXTURE_DIR = path.resolve(__dirname, "../test-fixtures");
 
@@ -87,10 +87,7 @@ describe("config", () => {
       const invalidDir = path.resolve(FIXTURE_DIR, "../test-fixtures-invalid");
       const configDir = path.join(invalidDir, "backend/config");
       fs.mkdirSync(configDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(configDir, "sources.yaml"),
-        "sources:\n  - name: bad\n",
-      );
+      fs.writeFileSync(path.join(configDir, "sources.yaml"), "sources:\n  - name: bad\n");
 
       cwdSpy.mockReturnValue(invalidDir);
       vi.resetModules();
@@ -104,10 +101,7 @@ describe("config", () => {
       const invalidDir = path.resolve(FIXTURE_DIR, "../test-fixtures-invalid");
       const configDir = path.join(invalidDir, "backend/config");
       fs.mkdirSync(configDir, { recursive: true });
-      fs.writeFileSync(
-        path.join(configDir, "settings.yaml"),
-        "digest: bad_value\n",
-      );
+      fs.writeFileSync(path.join(configDir, "settings.yaml"), "digest: bad_value\n");
 
       cwdSpy.mockReturnValue(invalidDir);
       vi.resetModules();
