@@ -10,12 +10,19 @@
     "db:studio": "prisma studio --schema migration/schema.prisma",
     "db:generate": "prisma generate --schema migration/schema.prisma",
     "db:push": "prisma db push --schema migration/schema.prisma",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "fetch": "tsx --env-file=.env scripts/fetch.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.5.0"
+    "@prisma/client": "^6.5.0",
+    "js-yaml": "^4.1.0",
+    "rss-parser": "^3.13.0"
   },
   "devDependencies": {
-    "prisma": "^6.5.0"
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.3.3",
+    "prisma": "^6.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
   }
 }
