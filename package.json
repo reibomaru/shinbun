@@ -14,7 +14,10 @@
     "db:seed": "prisma db seed",
     "fetch": "tsx --env-file=.env backend/scripts/fetch.ts",
     "fetch-hn": "tsx --env-file=.env backend/scripts/fetch-hn.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "biome check backend/",
+    "lint:fix": "biome check --fix backend/",
+    "format": "biome format --write backend/"
   },
   "dependencies": {
     "@google/genai": "^1.5.0",
@@ -24,6 +27,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.4",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.3.3",
     "prisma": "^6.5.0",
