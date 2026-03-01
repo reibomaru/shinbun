@@ -1,0 +1,21 @@
+{
+  "name": "shinbun",
+  "version": "0.1.0",
+  "private": true,
+  "prisma": {
+    "schema": "migration/schema.prisma"
+  },
+  "scripts": {
+    "db:migrate": "prisma migrate dev --schema migration/schema.prisma",
+    "db:studio": "prisma studio --schema migration/schema.prisma",
+    "db:generate": "prisma generate --schema migration/schema.prisma",
+    "db:push": "prisma db push --schema migration/schema.prisma",
+    "db:seed": "prisma db seed"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.5.0"
+  }
+}

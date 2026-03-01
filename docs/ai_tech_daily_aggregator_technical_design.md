@@ -649,6 +649,10 @@ shinbun/
 │   ├── slack.ts                    # Webhook 送信
 │   └── scoring.ts                  # 重要度スコアリング
 │
+├── migration/                     # DBスキーマ・マイグレーション（Prisma）
+│   ├── schema.prisma
+│   └── migrations/
+│
 └── .env.local                      # gitignore 対象（ローカル開発用・秘匿情報のみ）
 ```
 

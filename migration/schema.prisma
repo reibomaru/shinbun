@@ -1,0 +1,214 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+// ─── ENUM ───────────────────────────────────────────────
+
+enum SourceType {
+  github_repo
+  rss
+  youtube_channel
+  changelog
+  hackernews
+  reddit
+  arxiv
+}
+
+enum ItemType {
+  release
+  article
+  video
+  paper
+  changelog
+}
+
+enum ItemStatus {
+  pending
+  processed
+  archived
+}
+
+enum LabelType {
+  topic
+  format
+  difficulty
+}
+
+enum EntityType {
+  library
+  model
+  company
+  repo
+}
+
+enum WatchlistTargetType {
+  entity
+  keyword
+}
+
+enum FeedbackType {
+  helpful
+  not_helpful
+}
+
+// ─── MODELS ─────────────────────────────────────────────
+
+model Source {
+  id               String     @id @default(uuid()) @db.Uuid
+  type             SourceType
+  name             String
+  config           Json
+  pollingInterval  Int        @map("polling_interval")
+  enabled          Boolean    @default(true)
+  lastFetchedAt    DateTime?  @map("last_fetched_at")
+  lastError        String?    @map("last_error")
+  errorCount       Int        @default(0) @map("error_count")
+  createdAt        DateTime   @default(now()) @map("created_at")
+
+  rawEvents RawEvent[]
+
+  @@map("source")
+}
+
+model RawEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  sourceId    String   @map("source_id") @db.Uuid
+  externalId  String   @map("external_id")
+  payload     Json
+  contentHash String   @map("content_hash")
+  fetchedAt   DateTime @default(now()) @map("fetched_at")
+  processed   Boolean  @default(false)
+
+  source Source @relation(fields: [sourceId], references: [id])
+  items  Item[]
+
+  @@unique([sourceId, externalId])
+  @@map("raw_event")
+}
+
+model Item {
+  id               String     @id @default(uuid()) @db.Uuid
+  rawEventId       String     @map("raw_event_id") @db.Uuid
+  itemType         ItemType   @map("item_type")
+  title            String
+  url              String
+  urlNormalized    String?    @map("url_normalized")
+  publishedAt      DateTime?  @map("published_at")
+  language         String?
+  summaryShort     String?    @map("summary_short")
+  summaryMedium    String?    @map("summary_medium")
+  keyPoints        Json?      @map("key_points")
+  whyItMatters     String?    @map("why_it_matters")
+  importanceScore  Float?     @map("importance_score")
+  importanceReason String?    @map("importance_reason")
+  isUrgent         Boolean    @default(false) @map("is_urgent")
+  status           ItemStatus @default(pending)
+  llmModelUsed     String?    @map("llm_model_used")
+  llmCost          Float?     @map("llm_cost")
+  createdAt        DateTime   @default(now()) @map("created_at")
+
+  rawEvent    RawEvent     @relation(fields: [rawEventId], references: [id])
+  labels      ItemLabel[]
+  itemEntities ItemEntity[]
+  savedItems  SavedItem[]
+  readStatus  ReadStatus?
+  feedbacks   Feedback[]
+  embeddings  Embedding[]
+
+  @@map("item")
+}
+
+model ItemLabel {
+  itemId     String    @map("item_id") @db.Uuid
+  labelType  LabelType @map("label_type")
+  labelValue String    @map("label_value")
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@id([itemId, labelType, labelValue])
+  @@map("item_label")
+}
+
+model Entity {
+  id          String     @id @default(uuid()) @db.Uuid
+  entityType  EntityType @map("entity_type")
+  name        String
+  aliases     Json?
+  officialUrl String?    @map("official_url")
+
+  itemEntities ItemEntity[]
+
+  @@map("entity")
+}
+
+model ItemEntity {
+  itemId     String @map("item_id") @db.Uuid
+  entityId   String @map("entity_id") @db.Uuid
+  role       String
+  confidence Float
+
+  item   Item   @relation(fields: [itemId], references: [id])
+  entity Entity @relation(fields: [entityId], references: [id])
+
+  @@id([itemId, entityId])
+  @@map("item_entity")
+}
+
+model Watchlist {
+  id            String              @id @default(uuid()) @db.Uuid
+  targetType    WatchlistTargetType @map("target_type")
+  targetValue   String              @map("target_value")
+  notifyRealtime Boolean            @default(false) @map("notify_realtime")
+  scoreBoost    Float               @default(1.2) @map("score_boost")
+
+  @@map("watchlist")
+}
+
+model SavedItem {
+  id      String   @id @default(uuid()) @db.Uuid
+  itemId  String   @map("item_id") @db.Uuid
+  tags    Json?
+  savedAt DateTime @default(now()) @map("saved_at")
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@map("saved_item")
+}
+
+model ReadStatus {
+  itemId String   @id @map("item_id") @db.Uuid
+  readAt DateTime @default(now()) @map("read_at")
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@map("read_status")
+}
+
+model Feedback {
+  id           String       @id @default(uuid()) @db.Uuid
+  itemId       String       @map("item_id") @db.Uuid
+  feedbackType FeedbackType @map("feedback_type")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@map("feedback")
+}
+
+model Embedding {
+  itemId         String                      @map("item_id") @db.Uuid
+  vector         Unsupported("vector(1536)")
+  embeddingModel String                      @map("embedding_model")
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@id([itemId])
+  @@map("embedding")
+}
