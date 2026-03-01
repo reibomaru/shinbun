@@ -147,6 +147,7 @@ model Entity {
 
   itemEntities ItemEntity[]
 
+  @@unique([entityType, name])
   @@map("entity")
 }
 
