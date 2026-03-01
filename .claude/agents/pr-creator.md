@@ -66,14 +66,14 @@ If there are UI/screen changes:
 
 Create a well-structured PR with:
 
-**Title**: Concise, descriptive title following the project's convention (check existing PRs with `gh pr list` for style reference).
+**Title**: Concise, descriptive title following Conventional Commits format (e.g., `feat:`, `fix:`). Check existing PRs with `gh pr list` for style reference.
 
-**Description** should include:
-- **概要 (Overview)**: Brief summary of what this PR does
-- **変更内容 (Changes)**: Detailed list of changes made
-- **スクリーンショット (Screenshots)**: If UI changes exist, include captured screenshots
-- **テスト (Testing)**: How the changes were tested or should be tested
-- **関連Issue (Related Issues)**: Link any related issues if identifiable from branch name or commits
+**Description**: Must be written in **Japanese**. Use the following sections:
+- **概要**: What this PR does (brief summary)
+- **変更内容**: Detailed list of changes made
+- **スクリーンショット**: If UI changes exist, include captured screenshots in a Before/After table
+- **テスト**: How the changes were tested or should be tested
+- **関連Issue**: Link any related issues if identifiable from branch name or commits
 
 ### Step 6: Create the PR
 
@@ -87,7 +87,7 @@ If `gh` is not available, provide the user with alternative instructions.
 ## Important Rules
 
 1. **Always confirm the target branch with the user** before creating the PR. Never skip this step.
-2. **Communicate in Japanese** since the user's request is in Japanese. Use Japanese for all interactions.
+2. **All PR descriptions and user-facing communication must be in Japanese.** The PR title may use English (Conventional Commits format), but the body must be Japanese.
 3. **Never force-push or modify commits** — your job is only to create the PR.
 4. **If the branch has no commits ahead of the target**, inform the user and do not create an empty PR.
 5. **Check if a PR already exists** for this branch using `gh pr list --head <current-branch>` before creating a duplicate.
