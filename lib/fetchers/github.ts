@@ -1,15 +1,20 @@
+import { z } from "zod";
 import type { FetchResult, RawEventInput } from "./types.js";
 
-interface GitHubRelease {
-  id: number;
-  tag_name: string;
-  name: string | null;
-  html_url: string;
-  published_at: string | null;
-  body: string | null;
-  prerelease: boolean;
-  draft: boolean;
-}
+const GitHubReleaseSchema = z
+  .object({
+    id: z.number(),
+    tag_name: z.string(),
+    name: z.string().nullable(),
+    html_url: z.string(),
+    published_at: z.string().nullable(),
+    body: z.string().nullable(),
+    prerelease: z.boolean(),
+    draft: z.boolean(),
+  })
+  .passthrough();
+
+type GitHubRelease = z.infer<typeof GitHubReleaseSchema>;
 
 /**
  * GitHub REST API v3 で releases を取得
@@ -36,7 +41,7 @@ export async function fetchGitHubReleases(
       return { ok: false, error: `GitHub API ${res.status}: ${res.statusText}` };
     }
 
-    const releases: GitHubRelease[] = await res.json();
+    const releases = z.array(GitHubReleaseSchema).parse(await res.json());
 
     const events: RawEventInput[] = releases
       .filter((r) => !r.draft)

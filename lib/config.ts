@@ -1,57 +1,77 @@
 import fs from "node:fs";
 import path from "node:path";
 import yaml from "js-yaml";
-import type { SourceConfig } from "./fetchers/types.js";
+import { z } from "zod";
 
 const CONFIG_DIR = path.resolve(process.cwd(), "config");
 
-function loadYaml<T>(filename: string): T {
+function loadYaml(filename: string): unknown {
   const filePath = path.join(CONFIG_DIR, filename);
   const content = fs.readFileSync(filePath, "utf-8");
-  return yaml.load(content) as T;
+  return yaml.load(content, { schema: yaml.JSON_SCHEMA });
 }
+
+/** sources.yaml のスキーマ */
+export const SourceConfigSchema = z.object({
+  type: z.enum(["github_repo", "rss", "youtube_channel", "changelog", "hackernews"]),
+  name: z.string(),
+  config: z.record(z.string(), z.unknown()),
+  polling_interval: z.number(),
+});
+
+export type SourceConfig = z.infer<typeof SourceConfigSchema>;
+
+const SourcesFileSchema = z.object({
+  sources: z.array(SourceConfigSchema),
+});
 
 /** sources.yaml を読み込み、ソース一覧を返す */
 export function loadSources(): SourceConfig[] {
-  const data = loadYaml<{ sources: SourceConfig[] }>("sources.yaml");
+  const data = SourcesFileSchema.parse(loadYaml("sources.yaml"));
   return data.sources;
 }
 
-/** settings.yaml を読み込む */
-export interface Settings {
-  digest: {
-    time: string;
-    timezone: string;
-    top_count: number;
-    total_count: number;
-  };
-  cost_alert: {
-    daily_usd: number;
-  };
-}
+/** settings.yaml のスキーマ */
+export const SettingsSchema = z.object({
+  digest: z.object({
+    time: z.string(),
+    timezone: z.string(),
+    top_count: z.number(),
+    total_count: z.number(),
+  }),
+  cost_alert: z.object({
+    daily_usd: z.number(),
+  }),
+});
+
+export type Settings = z.infer<typeof SettingsSchema>;
 
 export function loadSettings(): Settings {
-  return loadYaml<Settings>("settings.yaml");
+  return SettingsSchema.parse(loadYaml("settings.yaml"));
 }
 
-/** watchlist.yaml を読み込む */
-export interface WatchlistEntity {
-  name: string;
-  notify_realtime: boolean;
-  score_boost: number;
-}
+/** watchlist.yaml のスキーマ */
+const WatchlistEntitySchema = z.object({
+  name: z.string(),
+  notify_realtime: z.boolean(),
+  score_boost: z.number(),
+});
 
-export interface WatchlistKeyword {
-  value: string;
-  notify_realtime: boolean;
-  score_boost: number;
-}
+const WatchlistKeywordSchema = z.object({
+  value: z.string(),
+  notify_realtime: z.boolean(),
+  score_boost: z.number(),
+});
 
-export interface Watchlist {
-  entities: WatchlistEntity[];
-  keywords: WatchlistKeyword[];
-}
+export const WatchlistSchema = z.object({
+  entities: z.array(WatchlistEntitySchema),
+  keywords: z.array(WatchlistKeywordSchema),
+});
+
+export type WatchlistEntity = z.infer<typeof WatchlistEntitySchema>;
+export type WatchlistKeyword = z.infer<typeof WatchlistKeywordSchema>;
+export type Watchlist = z.infer<typeof WatchlistSchema>;
 
 export function loadWatchlist(): Watchlist {
-  return loadYaml<Watchlist>("watchlist.yaml");
+  return WatchlistSchema.parse(loadYaml("watchlist.yaml"));
 }

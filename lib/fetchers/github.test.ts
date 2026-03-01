@@ -168,4 +168,17 @@ describe("fetchGitHubReleases", () => {
       expect(result.events[0].title).toBe("v1.0.0");
     }
   });
+
+  it("不正レスポンス形式で ok: false を返す", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ not_an_array: true }),
+      }),
+    );
+
+    const result = await fetchGitHubReleases(config, null);
+    expect(result.ok).toBe(false);
+  });
 });

@@ -1,4 +1,4 @@
-import type { SourceType } from "@prisma/client";
+export type { SourceConfig } from "../config.js";
 
 /** フェッチャーが返す個々のイベントデータ */
 export interface RawEventInput {
@@ -18,11 +18,3 @@ export interface RawEventInput {
 export type FetchResult =
   | { ok: true; events: RawEventInput[] }
   | { ok: false; error: string };
-
-/** sources.yaml の各ソース設定 */
-export interface SourceConfig {
-  type: SourceType;
-  name: string;
-  config: Record<string, unknown>;
-  polling_interval: number;
-}

@@ -120,4 +120,26 @@ describe("fetchRSS", () => {
       expect(result.error).toContain("Network error");
     }
   });
+
+  it("不正アイテムはスキップされる", async () => {
+    mockParseURL({
+      items: [
+        {
+          guid: "valid-1",
+          link: "https://example.com/1",
+          title: "Valid Article",
+          pubDate: "2025-01-15T00:00:00Z",
+        },
+        // 数値型の guid は safeParse で弾かれる
+        { guid: 12345, link: 67890, title: false },
+      ],
+    });
+
+    const result = await fetchRSS(config, null);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.events).toHaveLength(1);
+      expect(result.events[0].externalId).toBe("valid-1");
+    }
+  });
 });

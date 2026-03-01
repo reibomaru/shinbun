@@ -1,17 +1,22 @@
+import { z } from "zod";
 import type { FetchResult, RawEventInput } from "./types.js";
 
 const HN_API = "https://hacker-news.firebaseio.com/v0";
 
-interface HNItem {
-  id: number;
-  title: string;
-  url?: string;
-  score: number;
-  time: number;
-  by: string;
-  type: string;
-  descendants?: number;
-}
+const HNItemSchema = z
+  .object({
+    id: z.number(),
+    title: z.string(),
+    url: z.string().optional(),
+    score: z.number(),
+    time: z.number(),
+    by: z.string(),
+    type: z.string(),
+    descendants: z.number().optional(),
+  })
+  .passthrough();
+
+type HNItem = z.infer<typeof HNItemSchema>;
 
 /**
  * Hacker News API (topstories/beststories) を取得
@@ -28,7 +33,7 @@ export async function fetchHackerNews(
       return { ok: false, error: `HN API ${res.status}: ${res.statusText}` };
     }
 
-    const ids: number[] = await res.json();
+    const ids = z.array(z.number()).parse(await res.json());
     // 上位50件のみ取得（API負荷軽減）
     const topIds = ids.slice(0, 50);
 
@@ -37,7 +42,8 @@ export async function fetchHackerNews(
         try {
           const r = await fetch(`${HN_API}/item/${id}.json`);
           if (!r.ok) return null;
-          return await r.json();
+          const parsed = HNItemSchema.safeParse(await r.json());
+          return parsed.success ? parsed.data : null;
         } catch {
           return null;
         }

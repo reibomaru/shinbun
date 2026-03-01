@@ -1,7 +1,17 @@
+import { z } from "zod";
 import Parser from "rss-parser";
 import type { FetchResult, RawEventInput } from "./types.js";
 
 const parser = new Parser();
+
+const RSSItemSchema = z
+  .object({
+    guid: z.string().optional(),
+    link: z.string().optional(),
+    title: z.string().optional(),
+    pubDate: z.string().optional(),
+  })
+  .passthrough();
 
 /**
  * rss-parser で RSS/Atom フィードを取得
@@ -15,6 +25,10 @@ export async function fetchRSS(
     const feed = await parser.parseURL(config.url);
 
     const events: RawEventInput[] = (feed.items ?? [])
+      .filter((item) => {
+        const parsed = RSSItemSchema.safeParse(item);
+        return parsed.success;
+      })
       .filter((item) => {
         if (!lastFetchedAt) return true;
         const pubDate = item.pubDate ? new Date(item.pubDate) : null;

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import fs from "node:fs";
 import path from "node:path";
 
 const FIXTURE_DIR = path.resolve(__dirname, "../test-fixtures");
@@ -78,6 +79,42 @@ describe("config", () => {
         notify_realtime: false,
         score_boost: 1.1,
       });
+    });
+  });
+
+  describe("バリデーションエラー", () => {
+    it("不正な sources.yaml でエラーを throw する", async () => {
+      const invalidDir = path.resolve(FIXTURE_DIR, "../test-fixtures-invalid");
+      const configDir = path.join(invalidDir, "config");
+      fs.mkdirSync(configDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(configDir, "sources.yaml"),
+        "sources:\n  - name: bad\n",
+      );
+
+      cwdSpy.mockReturnValue(invalidDir);
+      vi.resetModules();
+      const { loadSources } = await importConfig();
+      expect(() => loadSources()).toThrow();
+
+      fs.rmSync(invalidDir, { recursive: true, force: true });
+    });
+
+    it("不正な settings.yaml でエラーを throw する", async () => {
+      const invalidDir = path.resolve(FIXTURE_DIR, "../test-fixtures-invalid");
+      const configDir = path.join(invalidDir, "config");
+      fs.mkdirSync(configDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(configDir, "settings.yaml"),
+        "digest: bad_value\n",
+      );
+
+      cwdSpy.mockReturnValue(invalidDir);
+      vi.resetModules();
+      const { loadSettings } = await importConfig();
+      expect(() => loadSettings()).toThrow();
+
+      fs.rmSync(invalidDir, { recursive: true, force: true });
     });
   });
 });

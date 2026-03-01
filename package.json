@@ -17,7 +17,8 @@
   "dependencies": {
     "@prisma/client": "^6.5.0",
     "js-yaml": "^4.1.0",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

@@ -147,4 +147,31 @@ describe("fetchHackerNews", () => {
       expect(result.error).toContain("500");
     }
   });
+
+  it("不正アイテムはスキップされる", async () => {
+    stubFetch([100, 101], {
+      100: makeItem({ id: 100 }),
+      101: { id: 101, invalid: true }, // title, score, time, by, type が欠けている
+    });
+
+    const result = await fetchHackerNews(config, null);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.events).toHaveLength(1);
+      expect(result.events[0].externalId).toBe("hn-100");
+    }
+  });
+
+  it("stories IDリストが不正な場合 ok: false を返す", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ not_an_array: true }),
+      }),
+    );
+
+    const result = await fetchHackerNews(config, null);
+    expect(result.ok).toBe(false);
+  });
 });
