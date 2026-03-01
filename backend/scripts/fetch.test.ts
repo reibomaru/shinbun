@@ -10,6 +10,7 @@ vi.mock("../lib/db/client.js", () => ({
     rawEvent: {
       findMany: vi.fn(),
       create: vi.fn(),
+      createMany: vi.fn(),
     },
     $disconnect: vi.fn(),
   },
@@ -26,6 +27,7 @@ const mockSource = prisma.source as unknown as {
 const mockRawEvent = prisma.rawEvent as unknown as {
   findMany: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
+  createMany: ReturnType<typeof vi.fn>;
 };
 
 describe("syncSources", () => {
@@ -33,9 +35,8 @@ describe("syncSources", () => {
     vi.clearAllMocks();
   });
 
-  it("新規ソースを作成する", async () => {
-    mockSource.findFirst.mockResolvedValue(null);
-    mockSource.upsert.mockResolvedValue({
+  it("@@unique([type, name]) を使った upsert でソースを同期する", async () => {
+    const sourceData = {
       id: "new-id",
       type: "rss",
       name: "Test RSS",
@@ -46,60 +47,24 @@ describe("syncSources", () => {
       errorCount: 0,
       lastError: null,
       createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    };
+    mockSource.upsert.mockResolvedValue(sourceData);
 
-    const result = await syncSources([
-      {
-        type: "rss" as const,
-        name: "Test RSS",
-        config: { url: "https://example.com/feed" },
-        polling_interval: 1800,
-      },
-    ]);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("new-id");
-    expect(mockSource.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "00000000-0000-0000-0000-000000000000" },
-        create: expect.objectContaining({ name: "Test RSS" }),
-      }),
-    );
-  });
-
-  it("既存ソースを更新する", async () => {
-    mockSource.findFirst.mockResolvedValue({ id: "existing-id" });
-    mockSource.upsert.mockResolvedValue({
-      id: "existing-id",
-      type: "rss",
+    const config = {
+      type: "rss" as const,
       name: "Test RSS",
-      config: { url: "https://example.com/feed-v2" },
-      pollingInterval: 3600,
-      enabled: true,
-      lastFetchedAt: null,
-      errorCount: 0,
-      lastError: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    const result = await syncSources([
-      {
-        type: "rss" as const,
-        name: "Test RSS",
-        config: { url: "https://example.com/feed-v2" },
-        polling_interval: 3600,
-      },
-    ]);
+      config: { url: "https://example.com/feed" },
+      polling_interval: 1800,
+    };
+    const result = await syncSources([config]);
 
     expect(result).toHaveLength(1);
+    expect(result[0].source.id).toBe("new-id");
+    expect(result[0].config).toBe(config);
     expect(mockSource.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "existing-id" },
-        update: expect.objectContaining({
-          config: { url: "https://example.com/feed-v2" },
-        }),
+        where: { type_name: { type: "rss", name: "Test RSS" } },
+        create: expect.objectContaining({ name: "Test RSS" }),
       }),
     );
   });
@@ -179,8 +144,8 @@ describe("saveEvents", () => {
     vi.clearAllMocks();
   });
 
-  it("正常にイベントを保存する", async () => {
-    mockRawEvent.create.mockResolvedValue({});
+  it("createMany + skipDuplicates で一括保存する", async () => {
+    mockRawEvent.createMany.mockResolvedValue({ count: 2 });
 
     const events = [
       {
@@ -190,36 +155,32 @@ describe("saveEvents", () => {
         publishedAt: new Date("2025-01-15T00:00:00Z"),
         payload: { key: "val1" },
       },
+      {
+        externalId: "id-2",
+        url: "https://example.com/2",
+        title: "Event 2",
+        publishedAt: null,
+        payload: { key: "val2" },
+      },
     ];
 
     const saved = await saveEvents("source-1", events);
-    expect(saved).toBe(1);
-    expect(mockRawEvent.create).toHaveBeenCalledTimes(1);
+    expect(saved).toBe(2);
+    expect(mockRawEvent.createMany).toHaveBeenCalledTimes(1);
+    expect(mockRawEvent.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skipDuplicates: true,
+        data: expect.arrayContaining([
+          expect.objectContaining({ sourceId: "source-1", externalId: "id-1" }),
+          expect.objectContaining({ sourceId: "source-1", externalId: "id-2" }),
+        ]),
+      }),
+    );
   });
 
-  it("Unique constraint エラーはスキップする", async () => {
-    mockRawEvent.create
-      .mockRejectedValueOnce(new Error("Unique constraint failed"))
-      .mockResolvedValueOnce({});
-
-    const events = [
-      {
-        externalId: "dup",
-        url: "https://example.com/dup",
-        title: "Dup",
-        publishedAt: null,
-        payload: { key: "dup" },
-      },
-      {
-        externalId: "ok",
-        url: "https://example.com/ok",
-        title: "OK",
-        publishedAt: null,
-        payload: { key: "ok" },
-      },
-    ];
-
-    const saved = await saveEvents("source-1", events);
-    expect(saved).toBe(1);
+  it("空配列には0を返しDBアクセスしない", async () => {
+    const saved = await saveEvents("source-1", []);
+    expect(saved).toBe(0);
+    expect(mockRawEvent.createMany).not.toHaveBeenCalled();
   });
 });

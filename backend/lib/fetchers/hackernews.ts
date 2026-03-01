@@ -37,18 +37,25 @@ export async function fetchHackerNews(
     // 上位50件のみ取得（API負荷軽減）
     const topIds = ids.slice(0, 50);
 
-    const items = await Promise.all(
-      topIds.map(async (id): Promise<HNItem | null> => {
-        try {
-          const r = await fetch(`${HN_API}/item/${id}.json`);
-          if (!r.ok) return null;
-          const parsed = HNItemSchema.safeParse(await r.json());
-          return parsed.success ? parsed.data : null;
-        } catch {
-          return null;
-        }
-      }),
-    );
+    // 10件ずつチャンクに分割して並列実行（API負荷軽減）
+    const CONCURRENCY = 10;
+    const items: (HNItem | null)[] = [];
+    for (let i = 0; i < topIds.length; i += CONCURRENCY) {
+      const chunk = topIds.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        chunk.map(async (id): Promise<HNItem | null> => {
+          try {
+            const r = await fetch(`${HN_API}/item/${id}.json`);
+            if (!r.ok) return null;
+            const parsed = HNItemSchema.safeParse(await r.json());
+            return parsed.success ? parsed.data : null;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      items.push(...results);
+    }
 
     const events: RawEventInput[] = items
       .filter((item): item is HNItem => item !== null)

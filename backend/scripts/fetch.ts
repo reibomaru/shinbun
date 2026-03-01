@@ -35,34 +35,32 @@ export async function fetchSource(
 
 /**
  * DB の source テーブルと YAML 設定を同期（なければ作成、あれば更新）
+ * @@unique([type, name]) を利用した正しい upsert で race condition を回避
  */
-export async function syncSources(configs: SourceConfig[]): Promise<Source[]> {
-  const sources: Source[] = [];
-  for (const cfg of configs) {
-    const source = await prisma.source.upsert({
-      where: {
-        // type + name でユニーク識別（DB側にuniqueがないので findFirst + create/update）
-        id: (
-          await prisma.source.findFirst({
-            where: { type: cfg.type, name: cfg.name },
-          })
-        )?.id ?? "00000000-0000-0000-0000-000000000000",
-      },
-      create: {
-        type: cfg.type,
-        name: cfg.name,
-        config: cfg.config as object,
-        pollingInterval: cfg.polling_interval,
-        enabled: true,
-      },
-      update: {
-        config: cfg.config as object,
-        pollingInterval: cfg.polling_interval,
-      },
-    });
-    sources.push(source);
-  }
-  return sources;
+export async function syncSources(
+  configs: SourceConfig[],
+): Promise<Array<{ source: Source; config: SourceConfig }>> {
+  return Promise.all(
+    configs.map(async (cfg) => {
+      const source = await prisma.source.upsert({
+        where: {
+          type_name: { type: cfg.type, name: cfg.name },
+        },
+        create: {
+          type: cfg.type,
+          name: cfg.name,
+          config: cfg.config as object,
+          pollingInterval: cfg.polling_interval,
+          enabled: true,
+        },
+        update: {
+          config: cfg.config as object,
+          pollingInterval: cfg.polling_interval,
+        },
+      });
+      return { source, config: cfg };
+    }),
+  );
 }
 
 /**
@@ -107,41 +105,34 @@ export async function deduplicateEvents(
 }
 
 /**
- * raw_event テーブルに保存
+ * raw_event テーブルに一括保存（createMany + skipDuplicates）
  */
 export async function saveEvents(sourceId: string, events: RawEventInput[]): Promise<number> {
-  let saved = 0;
-  for (const event of events) {
+  if (events.length === 0) return 0;
+
+  const data = events.map((event) => {
     const hash = contentHash(event.payload);
     const urlNorm = normalizeUrl(event.url);
-    try {
-      await prisma.rawEvent.create({
-        data: {
-          sourceId,
-          externalId: event.externalId,
-          payload: {
-            ...event.payload,
-            _url: event.url,
-            _title: event.title,
-            _publishedAt: event.publishedAt?.toISOString() ?? null,
-            _urlNormalized: urlNorm,
-          } as object,
-          contentHash: hash,
-        },
-      });
-      saved++;
-    } catch (err) {
-      // unique constraint violation（重複）はスキップ
-      if (
-        err instanceof Error &&
-        err.message.includes("Unique constraint")
-      ) {
-        continue;
-      }
-      throw err;
-    }
-  }
-  return saved;
+    return {
+      sourceId,
+      externalId: event.externalId,
+      payload: {
+        ...event.payload,
+        _url: event.url,
+        _title: event.title,
+        _publishedAt: event.publishedAt?.toISOString() ?? null,
+        _urlNormalized: urlNorm,
+      } as object,
+      contentHash: hash,
+    };
+  });
+
+  const result = await prisma.rawEvent.createMany({
+    data,
+    skipDuplicates: true,
+  });
+
+  return result.count;
 }
 
 /**
@@ -156,13 +147,12 @@ async function main() {
   console.log(`Loaded ${sourceConfigs.length} source configs`);
 
   // 2. DB の source テーブルと同期
-  const sources = await syncSources(sourceConfigs);
-  console.log(`Synced ${sources.length} sources to DB`);
+  const sourcesWithConfig = await syncSources(sourceConfigs);
+  console.log(`Synced ${sourcesWithConfig.length} sources to DB`);
 
   // 3. 各ソースを並列でフェッチ
   const results = await Promise.allSettled(
-    sources.map(async (source, i) => {
-      const cfg = sourceConfigs[i];
+    sourcesWithConfig.map(async ({ source, config: cfg }) => {
       const label = `[${source.type}] ${source.name}`;
 
       console.log(`  Fetching ${label}...`);
