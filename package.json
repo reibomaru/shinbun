@@ -13,9 +13,11 @@
     "db:push": "prisma db push --schema backend/migration/schema.prisma",
     "db:seed": "prisma db seed",
     "fetch": "tsx --env-file=.env backend/scripts/fetch.ts",
+    "fetch-hn": "tsx --env-file=.env backend/scripts/fetch-hn.ts",
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@prisma/client": "^6.5.0",
     "js-yaml": "^4.1.0",
     "rss-parser": "^3.13.0",
