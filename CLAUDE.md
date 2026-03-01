@@ -79,6 +79,7 @@ cd mock && npm run lint
 - メインブランチ: `main`
 - 機能ブランチ: `feature/<機能名>`
 - PR は `main` に対して作成
+- **PR の作成は必ず `pr-creator` サブエージェント（Agent ツール）を使用すること。** 直接 `gh pr create` を実行しない。
 
 ## PR 作成時の設計書整合性チェック
 
