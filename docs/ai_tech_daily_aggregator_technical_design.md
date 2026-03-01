@@ -562,7 +562,7 @@ jobs:
 
 ### 6.3 データフロー詳細
 
-#### 実装済みフロー（backend/scripts/fetch.ts）
+#### 実装済みフロー（backend/scripts/fetch.ts + backend/lib/usecases/）
 
 ```
   backend/config/sources.yaml（設定ファイル・Zodバリデーション）
@@ -641,8 +641,22 @@ shinbun/
 │   │   ├── config.test.ts
 │   │   ├── url.ts                  # URL正規化・contentHash（SHA-256）
 │   │   ├── url.test.ts
+│   │   ├── container.ts            # DI コンテナ（リポジトリのシングルトン生成・実装切替）
+│   │   ├── models/
+│   │   │   └── raw-event.ts        # RawEventInput / FetchResult 型定義
+│   │   ├── repositories/
+│   │   │   ├── source-repository.ts     # ISourceRepository インターフェース
+│   │   │   ├── raw-event-repository.ts  # IRawEventRepository インターフェース
+│   │   │   └── prisma/
+│   │   │       ├── prisma-source-repository.ts    # Prisma 実装
+│   │   │       └── prisma-raw-event-repository.ts # Prisma 実装
+│   │   ├── usecases/
+│   │   │   ├── fetch-source.ts         # ソース種別によるフェッチャー呼び分け
+│   │   │   ├── sync-sources.ts         # DB source テーブルとの upsert 同期
+│   │   │   ├── deduplicate-events.ts   # externalId / content_hash による重複排除
+│   │   │   └── save-events.ts          # raw_event への一括保存
 │   │   ├── fetchers/
-│   │   │   ├── types.ts            # RawEventInput / FetchResult 型定義
+│   │   │   ├── types.ts            # SourceConfig の再エクスポート（後方互換）
 │   │   │   ├── github.ts           # GitHub Releases API フェッチャー
 │   │   │   ├── github.test.ts
 │   │   │   ├── rss.ts              # RSS/Atom フィードフェッチャー
