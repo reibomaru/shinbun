@@ -85,7 +85,7 @@ describe("config", () => {
   describe("バリデーションエラー", () => {
     it("不正な sources.yaml でエラーを throw する", async () => {
       const invalidDir = path.resolve(FIXTURE_DIR, "../test-fixtures-invalid");
-      const configDir = path.join(invalidDir, "config");
+      const configDir = path.join(invalidDir, "backend/config");
       fs.mkdirSync(configDir, { recursive: true });
       fs.writeFileSync(
         path.join(configDir, "sources.yaml"),
@@ -102,7 +102,7 @@ describe("config", () => {
 
     it("不正な settings.yaml でエラーを throw する", async () => {
       const invalidDir = path.resolve(FIXTURE_DIR, "../test-fixtures-invalid");
-      const configDir = path.join(invalidDir, "config");
+      const configDir = path.join(invalidDir, "backend/config");
       fs.mkdirSync(configDir, { recursive: true });
       fs.writeFileSync(
         path.join(configDir, "settings.yaml"),

@@ -13,6 +13,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["lib/**/*.ts", "scripts/**/*.ts"],
+  "include": ["backend/lib/**/*.ts", "backend/scripts/**/*.ts"],
   "exclude": ["node_modules", "dist", "mock"]
 }

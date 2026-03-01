@@ -3,7 +3,7 @@ import path from "node:path";
 import yaml from "js-yaml";
 import { z } from "zod";
 
-const CONFIG_DIR = path.resolve(process.cwd(), "config");
+const CONFIG_DIR = path.resolve(process.cwd(), "backend/config");
 
 function loadYaml(filename: string): unknown {
   const filePath = path.join(CONFIG_DIR, filename);

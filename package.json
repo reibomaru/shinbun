@@ -2,16 +2,17 @@
   "name": "shinbun",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "prisma": {
-    "schema": "migration/schema.prisma"
+    "schema": "backend/migration/schema.prisma"
   },
   "scripts": {
-    "db:migrate": "prisma migrate dev --schema migration/schema.prisma",
-    "db:studio": "prisma studio --schema migration/schema.prisma",
-    "db:generate": "prisma generate --schema migration/schema.prisma",
-    "db:push": "prisma db push --schema migration/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema backend/migration/schema.prisma",
+    "db:studio": "prisma studio --schema backend/migration/schema.prisma",
+    "db:generate": "prisma generate --schema backend/migration/schema.prisma",
+    "db:push": "prisma db push --schema backend/migration/schema.prisma",
     "db:seed": "prisma db seed",
-    "fetch": "tsx --env-file=.env scripts/fetch.ts",
+    "fetch": "tsx --env-file=.env backend/scripts/fetch.ts",
     "test": "vitest run"
   },
   "dependencies": {
