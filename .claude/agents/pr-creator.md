@@ -85,7 +85,7 @@ If there are UI/screen changes:
 
 Create a well-structured PR with:
 
-**Title**: Concise, descriptive title following Conventional Commits format (e.g., `feat:`, `fix:`). Check existing PRs with `gh pr list` for style reference.
+**Title**: Must be **30 characters or less**. Use Conventional Commits format (e.g., `feat:`, `fix:`). Keep it short and focused on the main change. Check existing PRs with `gh pr list` for style reference.
 
 **Description**: Must be written in **Japanese**. Use the following sections:
 - **概要**: What this PR does (brief summary)
