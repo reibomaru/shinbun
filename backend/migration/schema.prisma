@@ -64,7 +64,6 @@ model Source {
   id               String     @id @default(uuid()) @db.Uuid
   type             SourceType
   name             String
-  description      String?
   config           Json
   pollingInterval  Int        @map("polling_interval")
   enabled          Boolean    @default(true)
