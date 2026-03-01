@@ -54,13 +54,17 @@ If there are UI/screen changes:
    # Example: upload an after screenshot
    AFTER_URL=$(.github/scripts/upload-image-to-github.sh --file screenshots/after.png)
    ```
-3. **Embed in PR description**: Insert the obtained URLs into a Before/After table.
+3. **Clean up local screenshots**: After uploading, delete the local screenshot files so they are not accidentally committed. Screenshots are only needed as GitHub-hosted URLs in the PR description. The upload script stores images on a dedicated `screenshots` orphan branch, keeping the feature branch clean.
+   ```bash
+   rm -f screenshots/after.png screenshots/before.png
+   ```
+4. **Embed in PR description**: Insert the obtained URLs into a Before/After table.
    ```markdown
    | Before | After |
    |--------|-------|
    | ![before](BEFORE_URL) | ![after](AFTER_URL) |
    ```
-4. Include this table in the PR description when running `gh pr create` in Steps 5-6.
+5. Include this table in the PR description when running `gh pr create` in Steps 5-6.
 
 ### Step 5: Generate PR Title and Description
 
@@ -92,6 +96,7 @@ If `gh` is not available, provide the user with alternative instructions.
 4. **If the branch has no commits ahead of the target**, inform the user and do not create an empty PR.
 5. **Check if a PR already exists** for this branch using `gh pr list --head <current-branch>` before creating a duplicate.
 6. **For screenshot handling**, use the `screenshot` skill to capture images, then upload them with `.github/scripts/upload-image-to-github.sh`.
+7. **Never commit screenshot files.** Screenshots are temporary — upload them to GitHub via the upload script, embed the returned URLs in the PR description, then delete the local files. They must not appear in any git commit.
 
 ## Error Handling
 
