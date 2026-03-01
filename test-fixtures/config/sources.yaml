@@ -1,0 +1,13 @@
+sources:
+  - type: github_repo
+    name: Test Repo
+    config:
+      owner: test-owner
+      repo: test-repo
+    polling_interval: 3600
+
+  - type: rss
+    name: Test RSS
+    config:
+      url: https://example.com/feed
+    polling_interval: 1800

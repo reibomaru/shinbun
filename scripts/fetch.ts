@@ -10,7 +10,7 @@ import type { Source } from "@prisma/client";
 /**
  * ソース設定に応じてフェッチャーを呼び分ける
  */
-async function fetchSource(
+export async function fetchSource(
   sourceConfig: SourceConfig,
   lastFetchedAt: Date | null,
 ): Promise<FetchResult> {
@@ -36,7 +36,7 @@ async function fetchSource(
 /**
  * DB の source テーブルと YAML 設定を同期（なければ作成、あれば更新）
  */
-async function syncSources(configs: SourceConfig[]): Promise<Source[]> {
+export async function syncSources(configs: SourceConfig[]): Promise<Source[]> {
   const sources: Source[] = [];
   for (const cfg of configs) {
     const source = await prisma.source.upsert({
@@ -68,7 +68,7 @@ async function syncSources(configs: SourceConfig[]): Promise<Source[]> {
 /**
  * Stage 1 フィルタ: content_hash / externalId で重複排除
  */
-async function deduplicateEvents(
+export async function deduplicateEvents(
   sourceId: string,
   events: RawEventInput[],
 ): Promise<RawEventInput[]> {
@@ -109,7 +109,7 @@ async function deduplicateEvents(
 /**
  * raw_event テーブルに保存
  */
-async function saveEvents(sourceId: string, events: RawEventInput[]): Promise<number> {
+export async function saveEvents(sourceId: string, events: RawEventInput[]): Promise<number> {
   let saved = 0;
   for (const event of events) {
     const hash = contentHash(event.payload);
@@ -218,9 +218,15 @@ async function main() {
   console.log(`\n=== Fetch completed in ${elapsed}s ===`);
 }
 
-main()
-  .catch((err) => {
-    console.error("Fatal error:", err);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+const isDirectRun =
+  process.argv[1] &&
+  import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+
+if (isDirectRun) {
+  main()
+    .catch((err) => {
+      console.error("Fatal error:", err);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}
