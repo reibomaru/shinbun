@@ -78,9 +78,18 @@ function closeBrackets(text: string): string {
   const stack: string[] = [];
 
   for (const ch of text) {
-    if (escaped) { escaped = false; continue; }
-    if (ch === "\\" && inString) { escaped = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\" && inString) {
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
     if (inString) continue;
     if (ch === "{") stack.push("}");
     else if (ch === "[") stack.push("]");
@@ -106,7 +115,12 @@ export function sanitizeLlmJson(raw: string): string {
   text = text.trim();
 
   // そのままパースできればそのまま返す
-  try { JSON.parse(text); return text; } catch { /* 修復を試みる */ }
+  try {
+    JSON.parse(text);
+    return text;
+  } catch {
+    /* 修復を試みる */
+  }
 
   // 最初の '{' を探す
   const start = text.indexOf("{");
@@ -120,7 +134,12 @@ export function sanitizeLlmJson(raw: string): string {
     if (bracePos === -1) break;
 
     const candidate = closeBrackets(text.slice(0, bracePos + 1));
-    try { JSON.parse(candidate); return candidate; } catch { /* 次の位置を試す */ }
+    try {
+      JSON.parse(candidate);
+      return candidate;
+    } catch {
+      /* 次の位置を試す */
+    }
 
     pos = bracePos;
   }

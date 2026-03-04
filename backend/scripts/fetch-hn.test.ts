@@ -78,7 +78,7 @@ import { prisma } from "../lib/db/client.js";
 import { fetchSource } from "../lib/fetchers/index.js";
 import { classifyBatch } from "../lib/processors/classify.js";
 import { summarizeItem } from "../lib/processors/summarize.js";
-import { sendCostAlert, sendUrgentAlert } from "../lib/slack.js";
+import { sendUrgentAlert } from "../lib/slack.js";
 import { deduplicateEvents, saveEvents, syncSources } from "../lib/sources.js";
 import { stage1Fetch, stage2Classify, stage3Summarize } from "./fetch-hn.js";
 
@@ -295,14 +295,17 @@ describe("stage2Classify", () => {
       {
         id: "re-1",
         sourceId: "src-1",
-        payload: { _title: "Broken Item", _url: "https://example.com/broken", score: 10, descendants: 0 },
+        payload: {
+          _title: "Broken Item",
+          _url: "https://example.com/broken",
+          score: 10,
+          descendants: 0,
+        },
         source: { type: "hackernews" },
       },
     ]);
 
-    mockClassifyBatch.mockResolvedValue([
-      { error: "SyntaxError: Unexpected end of JSON input" },
-    ]);
+    mockClassifyBatch.mockResolvedValue([{ error: "SyntaxError: Unexpected end of JSON input" }]);
 
     mockRawEvent.update.mockResolvedValue({});
 
@@ -397,9 +400,7 @@ describe("stage3Summarize", () => {
       },
     ]);
 
-    mockSummarizeItem.mockRejectedValue(
-      new SyntaxError("Unexpected end of JSON input"),
-    );
+    mockSummarizeItem.mockRejectedValue(new SyntaxError("Unexpected end of JSON input"));
 
     mockItem.update.mockResolvedValue({});
 

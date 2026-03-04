@@ -1,9 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
-import { normalizeUrl } from "../url.js";
+import type { ClassifyInput } from "../processors/classify.js";
 import { classifyBatch } from "../processors/classify.js";
 import { calculateImportanceScore } from "../scoring.js";
 import { sendUrgentAlert } from "../slack.js";
-import type { ClassifyInput } from "../processors/classify.js";
+import { normalizeUrl } from "../url.js";
 
 /** ソースタイプごとの信頼度マッピング */
 const SOURCE_TRUST: Record<string, number> = {
@@ -44,13 +44,16 @@ export async function classifyEvents(
   }));
 
   const results = await classifyBatch(classifyInputs, 5, (p) => {
-    process.stdout.write(`\r  Classifying... [${p.completed}/${p.total}] (✓${p.succeeded} ✗${p.failed})`);
+    process.stdout.write(
+      `\r  Classifying... [${p.completed}/${p.total}] (✓${p.succeeded} ✗${p.failed})`,
+    );
   });
   process.stdout.write("\n");
 
   let relevantCount = 0;
   let totalCost = 0;
-  const urgentItems: Array<{ title: string; url: string; topic: string; importanceScore: number }> = [];
+  const urgentItems: Array<{ title: string; url: string; topic: string; importanceScore: number }> =
+    [];
 
   for (let i = 0; i < unprocessed.length; i++) {
     const rawEvent = unprocessed[i];

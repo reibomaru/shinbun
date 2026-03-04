@@ -1,10 +1,10 @@
 import { loadSources } from "../lib/config.js";
 import { prisma } from "../lib/db/client.js";
 import { fetchSource } from "../lib/fetchers/index.js";
-import { syncSources, deduplicateEvents, saveEvents } from "../lib/sources.js";
+import { deduplicateEvents, saveEvents, syncSources } from "../lib/sources.js";
+import { checkCost } from "../lib/usecases/check-cost.js";
 import { classifyEvents } from "../lib/usecases/classify-events.js";
 import { summarizeItems } from "../lib/usecases/summarize-items.js";
-import { checkCost } from "../lib/usecases/check-cost.js";
 
 /**
  * Stage 1: HN ソースのフェッチ + 重複排除 + raw_event 保存

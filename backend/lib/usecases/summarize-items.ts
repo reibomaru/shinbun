@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
-import { summarizeItem } from "../processors/summarize.js";
 import type { SummarizeInput } from "../processors/summarize.js";
+import { summarizeItem } from "../processors/summarize.js";
 
 /**
  * 未要約の item を1件ずつ要約 → 即座に DB へ永続化

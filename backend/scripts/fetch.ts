@@ -1,13 +1,12 @@
-import type { Source } from "@prisma/client";
 import { loadSources } from "../lib/config.js";
-import { sourceRepository, rawEventRepository } from "../lib/container.js";
+import { rawEventRepository, sourceRepository } from "../lib/container.js";
 import { fetchSource } from "../lib/fetchers/index.js";
-import { syncSources } from "../lib/usecases/sync-sources.js";
+import { checkCost } from "../lib/usecases/check-cost.js";
+import { classifyEvents } from "../lib/usecases/classify-events.js";
 import { deduplicateEvents } from "../lib/usecases/deduplicate-events.js";
 import { saveEvents } from "../lib/usecases/save-events.js";
-import { classifyEvents } from "../lib/usecases/classify-events.js";
 import { summarizeItems } from "../lib/usecases/summarize-items.js";
-import { checkCost } from "../lib/usecases/check-cost.js";
+import { syncSources } from "../lib/usecases/sync-sources.js";
 
 /**
  * メイン処理
@@ -47,18 +46,10 @@ async function main() {
 
       console.log(`  ✓ ${label}: ${result.events.length} events fetched`);
 
-      const unique = await deduplicateEvents(
-        rawEventRepository,
-        source.id,
-        result.events,
-      );
+      const unique = await deduplicateEvents(rawEventRepository, source.id, result.events);
       console.log(`    → ${unique.length} new (after dedup)`);
 
-      const savedCount = await saveEvents(
-        rawEventRepository,
-        source.id,
-        unique,
-      );
+      const savedCount = await saveEvents(rawEventRepository, source.id, unique);
 
       await sourceRepository.updateLastFetched(source.id);
 
@@ -69,9 +60,7 @@ async function main() {
   let totalSaved = 0;
   for (const r of results) {
     if (r.status === "fulfilled") {
-      console.log(
-        `  ${r.value.source}: ${r.value.fetched} fetched, ${r.value.saved} saved`,
-      );
+      console.log(`  ${r.value.source}: ${r.value.fetched} fetched, ${r.value.saved} saved`);
       totalSaved += r.value.saved;
     } else {
       console.error(`  FAILED: ${r.reason}`);
@@ -82,7 +71,9 @@ async function main() {
   // Stage 2: Classify
   console.log("\n--- Stage 2: Classify (Gemini Flash Lite) ---");
   const { classified, relevant, totalCost: classifyCost } = await classifyEvents(prisma);
-  console.log(`  Classified ${classified}, relevant: ${relevant}, cost: $${classifyCost.toFixed(4)}`);
+  console.log(
+    `  Classified ${classified}, relevant: ${relevant}, cost: $${classifyCost.toFixed(4)}`,
+  );
 
   // Stage 3: Summarize
   console.log("\n--- Stage 3: Summarize (Gemini Flash) ---");
@@ -94,7 +85,9 @@ async function main() {
   await checkCost(prisma, totalCost);
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`\n=== Fetch completed in ${elapsed}s (total LLM cost: $${totalCost.toFixed(4)}) ===`);
+  console.log(
+    `\n=== Fetch completed in ${elapsed}s (total LLM cost: $${totalCost.toFixed(4)}) ===`,
+  );
 }
 
 const isDirectRun =

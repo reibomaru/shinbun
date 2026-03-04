@@ -5,10 +5,7 @@ import { sendCostAlert } from "../slack.js";
 /**
  * 日額 LLM コストをチェックし、閾値超過時にアラート送信
  */
-export async function checkCost(
-  prisma: PrismaClient,
-  totalCost: number,
-): Promise<void> {
+export async function checkCost(prisma: PrismaClient, totalCost: number): Promise<void> {
   const settings = loadSettings();
   const threshold = settings.cost_alert.daily_usd;
 
