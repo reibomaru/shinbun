@@ -64,6 +64,8 @@
 | content_hash | TEXT | SHA-256（重複排除用） |
 | fetched_at | TIMESTAMP | 取得日時 |
 | processed | BOOLEAN | LLM処理済みフラグ |
+| retry_count | INTEGER | LLM処理リトライ回数（デフォルト: 0） |
+| last_error | TEXT | 最後に発生したエラーメッセージ（NULL可） |
 
 #### item
 処理済みの記事データ。無期限保持。
@@ -85,7 +87,7 @@
 | importance_score | FLOAT | 重要度スコア（0-100） |
 | importance_reason | TEXT | スコア算出理由 |
 | is_urgent | BOOLEAN | 緊急アラート対象か |
-| status | ENUM | `pending / processed / archived` |
+| status | ENUM | `pending / processed / archived / llm_error` |
 | llm_model_used | TEXT | 処理に使用したモデル名 |
 | llm_cost | FLOAT | 処理コスト（USD） |
 | created_at | TIMESTAMP | 作成日時 |
@@ -480,7 +482,7 @@ keywords:
 | ワークフローファイル | スケジュール（cron式） | 処理内容 | 状態 |
 |---|---|---|---|
 | `fetch-hn.yml` | `*/30 * * * *`（30分毎） | HN Top/Best取得 → Stage 1-3処理 | 実装済み |
-| `fetch.yml` | `0 * * * *`（毎時0分） | 全ソース新着取得 → Stage 1-3処理 | 未実装 |
+| `fetch.yml` | `0 * * * *`（毎時0分） | 全ソース新着取得 → Stage 1-3処理 | 実装済み |
 | `digest.yml` | `0 23 * * *`（UTC 23:00 = JST 08:00） | 重要度順に整形 → Slack配信 | 未実装 |
 | `cleanup.yml` | `0 0 * * 0`（毎週日曜） | raw_event 30日超・read_status 90日超を削除 | 未実装 |
 
@@ -519,7 +521,7 @@ jobs:
       - run: npm test
 ```
 
-#### ワークフロー定義例（未実装: fetch.yml 予定）
+#### ワークフロー定義例（スクリプト実装済み: fetch.yml 予定）
 
 ```yaml
 # .github/workflows/fetch.yml
@@ -591,18 +593,21 @@ jobs:
   source.lastFetchedAt 更新、errorCount リセット
 ```
 
-#### 実装済みフロー（backend/scripts/fetch-hn.ts Stage 2-3）
+#### 実装済みフロー（共通モジュール: backend/lib/usecases/ Stage 2-3）
+
+fetch.ts・fetch-hn.ts の両方から共通モジュールとして利用される。
 
 ```
-  [Stage 2] Gemini Flash Lite 分類（バッチ処理・並列度5）
-    - 関連度判定
-    - topic / format ラベル付け
-    - 緊急度判定
+  [Stage 2] classifyEvents（Gemini Flash Lite 分類・バッチ処理・並列度5）
+    - 全ソースの未処理 raw_event を対象（ソースタイプフィルタなし）
+    - ソース信頼度を動的決定: hackernews=0.8, rss=0.7, github_release=0.9
+    - 関連度判定、topic / format ラベル付け、緊急度判定
       │
       ├── is_urgent=true ──→ 即時 Slack 緊急アラート送信
       │
       ▼ 関連ありのみ
-  [Stage 3] Gemini Flash 要約（上位100件・並列度3）
+  [Stage 3] summarizeItems（Gemini Flash 要約・上位100件・並列度3）
+    - 全ソースの未要約 item を対象（ソースタイプフィルタなし）
     - 日本語要約生成（short / medium / key_points / why_it_matters）
     - エンティティ抽出
     - Flash 失敗時は Flash Lite にフォールバック
@@ -611,7 +616,7 @@ jobs:
   item テーブルに保存
       │
       ▼
-  llm_cost 集計 → 日次閾値チェック → 超過時 Slack アラート
+  checkCost: llm_cost 集計 → 日次閾値チェック → 超過時 Slack アラート
 
   [毎朝 Digestジョブ]（未実装）
   item テーブルから過去24h分を取得 → Slack配信
