@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // --- Mocks ---
 
-vi.mock("../lib/db/client.js", () => ({
-  prisma: {
+vi.mock("../lib/db/client.js", () => {
+  const p = {
     source: {
       upsert: vi.fn(),
       update: vi.fn(),
@@ -28,9 +28,12 @@ vi.mock("../lib/db/client.js", () => ({
     itemEntity: {
       upsert: vi.fn(),
     },
+    // $transaction はコールバックに prisma 自身を渡す
+    $transaction: vi.fn((fn: (tx: unknown) => Promise<unknown>) => fn(p)),
     $disconnect: vi.fn(),
-  },
-}));
+  };
+  return { prisma: p };
+});
 
 vi.mock("../lib/config.js", () => ({
   loadSources: vi.fn().mockReturnValue([
@@ -53,7 +56,7 @@ vi.mock("../lib/processors/classify.js", () => ({
 }));
 
 vi.mock("../lib/processors/summarize.js", () => ({
-  summarizeBatch: vi.fn(),
+  summarizeItem: vi.fn(),
 }));
 
 vi.mock("../lib/slack.js", () => ({
@@ -73,7 +76,7 @@ vi.mock("../lib/sources.js", () => ({
 
 import { prisma } from "../lib/db/client.js";
 import { classifyBatch } from "../lib/processors/classify.js";
-import { summarizeBatch } from "../lib/processors/summarize.js";
+import { summarizeItem } from "../lib/processors/summarize.js";
 import { sendUrgentAlert, sendCostAlert } from "../lib/slack.js";
 import { fetchSource } from "../lib/fetchers/index.js";
 import { syncSources, deduplicateEvents, saveEvents } from "../lib/sources.js";
@@ -84,7 +87,7 @@ const mockFetchSource = fetchSource as ReturnType<typeof vi.fn>;
 const mockDedup = deduplicateEvents as ReturnType<typeof vi.fn>;
 const mockSaveEvents = saveEvents as ReturnType<typeof vi.fn>;
 const mockClassifyBatch = classifyBatch as ReturnType<typeof vi.fn>;
-const mockSummarizeBatch = summarizeBatch as ReturnType<typeof vi.fn>;
+const mockSummarizeItem = summarizeItem as ReturnType<typeof vi.fn>;
 
 const mockRawEvent = prisma.rawEvent as unknown as {
   findMany: ReturnType<typeof vi.fn>;
@@ -144,7 +147,7 @@ describe("stage2Classify", () => {
     vi.clearAllMocks();
   });
 
-  it("未処理 raw_event を分類して item + item_label を作成する", async () => {
+  it("未処理 raw_event を分類して item + item_label を作成する（retryCount < 3 のみ）", async () => {
     mockRawEvent.findMany.mockResolvedValue([
       {
         id: "re-1",
@@ -178,6 +181,16 @@ describe("stage2Classify", () => {
     expect(mockItemLabel.createMany).toHaveBeenCalledTimes(1);
     expect(mockRawEvent.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: "re-1" }, data: { processed: true } }),
+    );
+
+    // retryCount < 3 フィルタが適用されていることを検証
+    expect(mockRawEvent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          processed: false,
+          retryCount: { lt: 3 },
+        }),
+      }),
     );
   });
 
@@ -242,6 +255,37 @@ describe("stage2Classify", () => {
       expect.objectContaining({ title: "Critical CVE", topic: "security" }),
     );
   });
+
+  it("分類失敗時に retryCount をインクリメントし lastError を記録する", async () => {
+    mockRawEvent.findMany.mockResolvedValue([
+      {
+        id: "re-1",
+        sourceId: "src-1",
+        payload: { _title: "Broken Item", _url: "https://example.com/broken", score: 10, descendants: 0 },
+        source: { type: "hackernews" },
+      },
+    ]);
+
+    mockClassifyBatch.mockResolvedValue([
+      { error: "SyntaxError: Unexpected end of JSON input" },
+    ]);
+
+    mockRawEvent.update.mockResolvedValue({});
+
+    const result = await stage2Classify();
+
+    expect(result.relevant).toBe(0);
+    expect(mockItem.create).not.toHaveBeenCalled();
+    expect(mockRawEvent.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "re-1" },
+        data: expect.objectContaining({
+          retryCount: { increment: 1 },
+          lastError: expect.stringContaining("SyntaxError"),
+        }),
+      }),
+    );
+  });
 });
 
 describe("stage3Summarize", () => {
@@ -260,19 +304,17 @@ describe("stage3Summarize", () => {
       },
     ]);
 
-    mockSummarizeBatch.mockResolvedValue([
-      {
-        summaryShort: "AI ニュース要約",
-        summaryMedium: "詳細な要約テキスト",
-        keyPoints: ["ポイント1", "ポイント2", "ポイント3"],
-        whyItMatters: "重要な理由",
-        entities: [
-          { name: "Claude", type: "model", role: "AIモデル", confidence: 0.95 },
-        ],
-        llmCost: 0.005,
-        modelUsed: "gemini-2.5-flash",
-      },
-    ]);
+    mockSummarizeItem.mockResolvedValue({
+      summaryShort: "AI ニュース要約",
+      summaryMedium: "詳細な要約テキスト",
+      keyPoints: ["ポイント1", "ポイント2", "ポイント3"],
+      whyItMatters: "重要な理由",
+      entities: [
+        { name: "Claude", type: "model", role: "AIモデル", confidence: 0.95 },
+      ],
+      llmCost: 0.005,
+      modelUsed: "gemini-2.5-flash",
+    });
 
     mockItem.update.mockResolvedValue({});
     mockEntity.upsert.mockResolvedValue({ id: "entity-1" });
@@ -282,9 +324,24 @@ describe("stage3Summarize", () => {
 
     expect(result.summarized).toBe(1);
     expect(result.totalCost).toBe(0.005);
+    expect(mockSummarizeItem).toHaveBeenCalledTimes(1);
     expect(mockItem.update).toHaveBeenCalledTimes(1);
     expect(mockEntity.upsert).toHaveBeenCalledTimes(1);
     expect(mockItemEntity.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("status: pending でクエリすることを検証", async () => {
+    mockItem.findMany.mockResolvedValue([]);
+
+    await stage3Summarize();
+
+    expect(mockItem.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: "pending",
+        }),
+      }),
+    );
   });
 
   it("要約するアイテムがない場合はスキップする", async () => {
@@ -294,6 +351,34 @@ describe("stage3Summarize", () => {
 
     expect(result.summarized).toBe(0);
     expect(result.totalCost).toBe(0);
-    expect(mockSummarizeBatch).not.toHaveBeenCalled();
+    expect(mockSummarizeItem).not.toHaveBeenCalled();
+  });
+
+  it("要約失敗時に status を llm_error に設定する", async () => {
+    mockItem.findMany.mockResolvedValue([
+      {
+        id: "item-1",
+        title: "Broken Summary",
+        url: "https://example.com/broken",
+        rawEvent: { payload: {} },
+        labels: [{ labelType: "topic", labelValue: "genai" }],
+      },
+    ]);
+
+    mockSummarizeItem.mockRejectedValue(
+      new SyntaxError("Unexpected end of JSON input"),
+    );
+
+    mockItem.update.mockResolvedValue({});
+
+    const result = await stage3Summarize();
+
+    expect(result.summarized).toBe(0);
+    expect(mockItem.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "item-1" },
+        data: { status: "llm_error" },
+      }),
+    );
   });
 });
