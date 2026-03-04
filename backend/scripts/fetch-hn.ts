@@ -1,7 +1,8 @@
 import { prisma } from "../lib/db/client.js";
 import { loadSources, loadSettings } from "../lib/config.js";
 import { normalizeUrl } from "../lib/url.js";
-import { syncSources, fetchSource, deduplicateEvents, saveEvents } from "./fetch.js";
+import { fetchSource } from "../lib/fetchers/index.js";
+import { syncSources, deduplicateEvents, saveEvents } from "../lib/sources.js";
 import { classifyBatch } from "../lib/processors/classify.js";
 import { summarizeBatch } from "../lib/processors/summarize.js";
 import { calculateImportanceScore } from "../lib/scoring.js";
@@ -97,16 +98,17 @@ async function stage2Classify() {
     const rawEvent = unprocessed[i];
     const result = results[i];
 
-    // raw_event を processed に更新
+    if ("error" in result) {
+      console.warn(`  ✗ Classification failed for ${classifyInputs[i].title}: ${result.error}`);
+      // processed を true にしない → 再実行時にリトライされる
+      continue;
+    }
+
+    // 分類成功時のみ processed に更新
     await prisma.rawEvent.update({
       where: { id: rawEvent.id },
       data: { processed: true },
     });
-
-    if ("error" in result) {
-      console.warn(`  ✗ Classification failed for ${classifyInputs[i].title}: ${result.error}`);
-      continue;
-    }
 
     totalCost += result.llmCost;
 
@@ -144,7 +146,7 @@ async function stage2Classify() {
         importanceScore: score,
         importanceReason: reason,
         isUrgent: result.isUrgent,
-        llmModelUsed: "haiku",
+        llmModelUsed: "gemini-2.5-flash-lite",
         llmCost: result.llmCost,
       },
     });
@@ -304,12 +306,12 @@ async function main() {
   console.log(`  Saved ${savedCount} new raw events`);
 
   // Stage 2: Classify
-  console.log("\n--- Stage 2: Classify (Haiku) ---");
+  console.log("\n--- Stage 2: Classify (Gemini Flash Lite) ---");
   const { classified, relevant, totalCost: classifyCost } = await stage2Classify();
   console.log(`  Classified ${classified}, relevant: ${relevant}, cost: $${classifyCost.toFixed(4)}`);
 
   // Stage 3: Summarize
-  console.log("\n--- Stage 3: Summarize (Sonnet) ---");
+  console.log("\n--- Stage 3: Summarize (Gemini Flash) ---");
   const { summarized, totalCost: summarizeCost } = await stage3Summarize();
   console.log(`  Summarized ${summarized}, cost: $${summarizeCost.toFixed(4)}`);
 

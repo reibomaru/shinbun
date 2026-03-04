@@ -61,10 +61,12 @@ vi.mock("../lib/slack.js", () => ({
   sendCostAlert: vi.fn(),
 }));
 
-// fetch.js の syncSources / fetchSource / deduplicateEvents / saveEvents をモック
-vi.mock("./fetch.js", () => ({
-  syncSources: vi.fn(),
+vi.mock("../lib/fetchers/index.js", () => ({
   fetchSource: vi.fn(),
+}));
+
+vi.mock("../lib/sources.js", () => ({
+  syncSources: vi.fn(),
   deduplicateEvents: vi.fn(),
   saveEvents: vi.fn(),
 }));
@@ -73,7 +75,8 @@ import { prisma } from "../lib/db/client.js";
 import { classifyBatch } from "../lib/processors/classify.js";
 import { summarizeBatch } from "../lib/processors/summarize.js";
 import { sendUrgentAlert, sendCostAlert } from "../lib/slack.js";
-import { syncSources, fetchSource, deduplicateEvents, saveEvents } from "./fetch.js";
+import { fetchSource } from "../lib/fetchers/index.js";
+import { syncSources, deduplicateEvents, saveEvents } from "../lib/sources.js";
 import { stage1Fetch, stage2Classify, stage3Summarize } from "./fetch-hn.js";
 
 const mockSyncSources = syncSources as ReturnType<typeof vi.fn>;
@@ -267,7 +270,7 @@ describe("stage3Summarize", () => {
           { name: "Claude", type: "model", role: "AIモデル", confidence: 0.95 },
         ],
         llmCost: 0.005,
-        modelUsed: "claude-sonnet-4-6-20250514",
+        modelUsed: "gemini-2.5-flash",
       },
     ]);
 

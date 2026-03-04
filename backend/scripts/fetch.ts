@@ -1,7 +1,7 @@
 import { prisma } from "../lib/db/client.js";
 import { loadSources } from "../lib/config.js";
 import { sourceRepository, rawEventRepository } from "../lib/container.js";
-import { fetchSource } from "../lib/usecases/fetch-source.js";
+import { fetchSource } from "../lib/fetchers/index.js";
 import { syncSources } from "../lib/usecases/sync-sources.js";
 import { deduplicateEvents } from "../lib/usecases/deduplicate-events.js";
 import { saveEvents } from "../lib/usecases/save-events.js";
@@ -38,16 +38,28 @@ async function main() {
       console.log(`  ✓ ${label}: ${result.events.length} events fetched`);
 
       // 4. Stage 1 フィルタ: 重複排除
-      const unique = await deduplicateEvents(rawEventRepository, source.id, result.events);
+      const unique = await deduplicateEvents(
+        rawEventRepository,
+        source.id,
+        result.events,
+      );
       console.log(`    → ${unique.length} new (after dedup)`);
 
       // 5. raw_event に保存
-      const savedCount = await saveEvents(rawEventRepository, source.id, unique);
+      const savedCount = await saveEvents(
+        rawEventRepository,
+        source.id,
+        unique,
+      );
 
       // 6. last_fetched_at を更新、エラーカウントリセット
       await sourceRepository.updateLastFetched(source.id);
 
-      return { source: label, fetched: result.events.length, saved: savedCount };
+      return {
+        source: label,
+        fetched: result.events.length,
+        saved: savedCount,
+      };
     }),
   );
 
@@ -55,7 +67,9 @@ async function main() {
   console.log("\n=== Results ===");
   for (const r of results) {
     if (r.status === "fulfilled") {
-      console.log(`  ${r.value.source}: ${r.value.fetched} fetched, ${r.value.saved} saved`);
+      console.log(
+        `  ${r.value.source}: ${r.value.fetched} fetched, ${r.value.saved} saved`,
+      );
     } else {
       console.error(`  FAILED: ${r.reason}`);
     }
