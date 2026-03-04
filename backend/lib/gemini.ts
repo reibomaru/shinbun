@@ -8,7 +8,6 @@ export const MODELS = {
 const globalForGemini = globalThis as unknown as { gemini?: GoogleGenAI };
 
 export const gemini =
-  globalForGemini.gemini ??
-  new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? "dummy" });
+  globalForGemini.gemini ?? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY ?? "dummy" });
 
 globalForGemini.gemini = gemini;

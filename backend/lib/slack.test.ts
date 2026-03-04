@@ -1,14 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const originalEnv = process.env.SLACK_WEBHOOK_URL;
 
 describe("slack", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({ ok: true, status: 200, statusText: "OK" }),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, statusText: "OK" }));
   });
 
   afterEach(() => {
@@ -66,9 +63,7 @@ describe("slack", () => {
     await sendCostAlert(6.5, 5.0);
 
     expect(fetch).toHaveBeenCalledTimes(1);
-    const body = JSON.parse(
-      (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body,
-    );
+    const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
     expect(body.blocks[1].text.text).toContain("$6.5000");
     expect(body.blocks[1].text.text).toContain("$5.00");
   });

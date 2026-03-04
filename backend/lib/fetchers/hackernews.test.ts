@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchHackerNews } from "./hackernews.js";
 
 const config = { mode: "top" as const, min_score: 50 };
@@ -28,10 +28,7 @@ describe("fetchHackerNews", () => {
     globalThis.fetch = originalFetch;
   });
 
-  function stubFetch(
-    storyIds: number[],
-    items: Record<number, unknown>,
-  ) {
+  function stubFetch(storyIds: number[], items: Record<number, unknown>) {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation((url: string) => {
@@ -93,10 +90,7 @@ describe("fetchHackerNews", () => {
       }),
     });
 
-    const result = await fetchHackerNews(
-      config,
-      new Date("2025-01-15T00:00:00Z"),
-    );
+    const result = await fetchHackerNews(config, new Date("2025-01-15T00:00:00Z"));
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.events).toHaveLength(1);
@@ -125,9 +119,7 @@ describe("fetchHackerNews", () => {
     const result = await fetchHackerNews(config, null);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.events[0].url).toBe(
-        "https://news.ycombinator.com/item?id=100",
-      );
+      expect(result.events[0].url).toBe("https://news.ycombinator.com/item?id=100");
     }
   });
 

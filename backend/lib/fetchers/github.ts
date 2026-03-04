@@ -14,8 +14,6 @@ const GitHubReleaseSchema = z
   })
   .passthrough();
 
-type GitHubRelease = z.infer<typeof GitHubReleaseSchema>;
-
 /**
  * GitHub REST API v3 で releases を取得
  * GITHUB_TOKEN 環境変数があれば認証ヘッダーに使用（レートリミット緩和）

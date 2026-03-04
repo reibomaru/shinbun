@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // withRetry をリトライなしでパススルー（テスト高速化）
 vi.mock("../retry.js", () => ({
@@ -18,7 +18,7 @@ vi.mock("../gemini.js", () => ({
 }));
 
 import { gemini } from "../gemini.js";
-import { classifyItem, classifyBatch } from "./classify.js";
+import { classifyBatch, classifyItem } from "./classify.js";
 
 const mockGenerateContent = gemini.models.generateContent as ReturnType<typeof vi.fn>;
 

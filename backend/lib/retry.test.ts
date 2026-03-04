@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { withRetry } from "./retry.js";
 
 describe("withRetry", () => {
@@ -24,9 +24,7 @@ describe("withRetry", () => {
   it("maxRetries 回失敗したら最後のエラーを throw する", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("always fail"));
 
-    await expect(
-      withRetry(fn, { maxRetries: 2, baseDelayMs: 1 }),
-    ).rejects.toThrow("always fail");
+    await expect(withRetry(fn, { maxRetries: 2, baseDelayMs: 1 })).rejects.toThrow("always fail");
     // 初回 + 2回リトライ = 3回
     expect(fn).toHaveBeenCalledTimes(3);
   });
@@ -34,9 +32,7 @@ describe("withRetry", () => {
   it("maxRetries=0 のときは1回だけ実行する", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("fail"));
 
-    await expect(
-      withRetry(fn, { maxRetries: 0, baseDelayMs: 1 }),
-    ).rejects.toThrow("fail");
+    await expect(withRetry(fn, { maxRetries: 0, baseDelayMs: 1 })).rejects.toThrow("fail");
     expect(fn).toHaveBeenCalledTimes(1);
   });
 });

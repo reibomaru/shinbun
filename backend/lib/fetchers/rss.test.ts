@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("rss-parser", () => {
   const MockParser = vi.fn();
@@ -12,15 +12,11 @@ import { fetchRSS } from "./rss.js";
 const config = { url: "https://example.com/feed" };
 
 function mockParseURL(result: unknown) {
-  (Parser.prototype.parseURL as ReturnType<typeof vi.fn>).mockResolvedValue(
-    result,
-  );
+  (Parser.prototype.parseURL as ReturnType<typeof vi.fn>).mockResolvedValue(result);
 }
 
 function mockParseURLError(error: Error) {
-  (Parser.prototype.parseURL as ReturnType<typeof vi.fn>).mockRejectedValue(
-    error,
-  );
+  (Parser.prototype.parseURL as ReturnType<typeof vi.fn>).mockRejectedValue(error);
 }
 
 describe("fetchRSS", () => {

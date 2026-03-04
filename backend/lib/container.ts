@@ -1,6 +1,6 @@
 import { prisma } from "./db/client.js";
-import { PrismaSourceRepository } from "./repositories/prisma/prisma-source-repository.js";
 import { PrismaRawEventRepository } from "./repositories/prisma/prisma-raw-event-repository.js";
+import { PrismaSourceRepository } from "./repositories/prisma/prisma-source-repository.js";
 
 /**
  * リポジトリのシングルトンインスタンス。
