@@ -26,5 +26,8 @@ jobs:
       - name: Lint (Biome)
         run: npm run lint
 
+      - name: Format check (Biome)
+        run: npx biome format --check backend/
+
       - name: Run tests
         run: npm test
