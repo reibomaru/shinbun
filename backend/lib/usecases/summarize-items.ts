@@ -1,17 +1,18 @@
 import type { PrismaClient } from "@prisma/client";
-import { summarizeBatch } from "../processors/summarize.js";
+import { summarizeItem } from "../processors/summarize.js";
 import type { SummarizeInput } from "../processors/summarize.js";
 
 /**
- * 未要約の item を Sonnet で要約 → item 更新 + entity / item_entity 作成
+ * 未要約の item を1件ずつ要約 → 即座に DB へ永続化
+ * LLM コストを無駄にしないため、バッチ完了を待たず都度コミットする
  */
 export async function summarizeItems(
   prisma: PrismaClient,
 ): Promise<{ summarized: number; totalCost: number }> {
-  // summaryShort が null の item を重要度順で最大100件取得
+  // pending ステータスの item を重要度順で最大100件取得
   const items = await prisma.item.findMany({
     where: {
-      summaryShort: null,
+      status: "pending",
     },
     include: {
       rawEvent: true,
@@ -28,74 +29,85 @@ export async function summarizeItems(
 
   console.log(`  Summarizing ${items.length} items...`);
 
-  const summarizeInputs: SummarizeInput[] = items.map((item) => {
+  let summarizedCount = 0;
+  let failedCount = 0;
+  let totalCost = 0;
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     const topicLabel = item.labels.find((l) => l.labelType === "topic");
-    return {
+    const input: SummarizeInput = {
       title: item.title,
       url: item.url,
       topic: topicLabel?.labelValue ?? "unknown",
       payload: item.rawEvent.payload as Record<string, unknown>,
     };
-  });
 
-  const results = await summarizeBatch(summarizeInputs);
+    process.stdout.write(
+      `\r  Summarizing... [${i + 1}/${items.length}] (✓${summarizedCount} ✗${failedCount})`,
+    );
 
-  let summarizedCount = 0;
-  let totalCost = 0;
+    // 1件ずつ要約 → 即永続化
+    try {
+      const result = await summarizeItem(input);
+      totalCost += result.llmCost;
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const result = results[i];
+      // item 更新 + entity 作成をトランザクションで永続化
+      await prisma.$transaction(async (tx) => {
+        await tx.item.update({
+          where: { id: item.id },
+          data: {
+            summaryShort: result.summaryShort,
+            summaryMedium: result.summaryMedium,
+            keyPoints: result.keyPoints,
+            whyItMatters: result.whyItMatters,
+            llmModelUsed: result.modelUsed,
+            llmCost: { increment: result.llmCost },
+            status: "processed",
+          },
+        });
 
-    if ("error" in result) {
-      console.warn(`  ✗ Summarization failed for "${item.title}": ${result.error}`);
-      continue;
-    }
+        for (const entity of result.entities) {
+          const dbEntity = await tx.entity.upsert({
+            where: {
+              entityType_name: { entityType: entity.type, name: entity.name },
+            },
+            create: { entityType: entity.type, name: entity.name },
+            update: {},
+          });
 
-    totalCost += result.llmCost;
-    summarizedCount++;
-
-    // item 更新
-    await prisma.item.update({
-      where: { id: item.id },
-      data: {
-        summaryShort: result.summaryShort,
-        summaryMedium: result.summaryMedium,
-        keyPoints: result.keyPoints,
-        whyItMatters: result.whyItMatters,
-        llmModelUsed: result.modelUsed,
-        llmCost: { increment: result.llmCost },
-        status: "processed",
-      },
-    });
-
-    // entity + item_entity 作成
-    for (const entity of result.entities) {
-      const dbEntity = await prisma.entity.upsert({
-        where: {
-          entityType_name: { entityType: entity.type, name: entity.name },
-        },
-        create: { entityType: entity.type, name: entity.name },
-        update: {},
+          await tx.itemEntity.upsert({
+            where: {
+              itemId_entityId: { itemId: item.id, entityId: dbEntity.id },
+            },
+            create: {
+              itemId: item.id,
+              entityId: dbEntity.id,
+              role: entity.role,
+              confidence: entity.confidence,
+            },
+            update: {
+              role: entity.role,
+              confidence: entity.confidence,
+            },
+          });
+        }
       });
 
-      await prisma.itemEntity.upsert({
-        where: {
-          itemId_entityId: { itemId: item.id, entityId: dbEntity.id },
-        },
-        create: {
-          itemId: item.id,
-          entityId: dbEntity.id,
-          role: entity.role,
-          confidence: entity.confidence,
-        },
-        update: {
-          role: entity.role,
-          confidence: entity.confidence,
-        },
+      summarizedCount++;
+    } catch (err) {
+      failedCount++;
+      console.warn(`\n  ✗ Failed for "${item.title}": ${err}`);
+      await prisma.item.update({
+        where: { id: item.id },
+        data: { status: "llm_error" },
       });
     }
   }
+
+  process.stdout.write(
+    `\r  Summarizing... [${items.length}/${items.length}] (✓${summarizedCount} ✗${failedCount})\n`,
+  );
 
   return { summarized: summarizedCount, totalCost };
 }
