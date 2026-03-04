@@ -18,10 +18,11 @@ const SOURCE_TRUST: Record<string, number> = {
 export async function classifyEvents(
   prisma: PrismaClient,
 ): Promise<{ classified: number; relevant: number; totalCost: number }> {
-  // 全ソースの未処理 raw_event を取得
+  // 全ソースの未処理 raw_event を取得（リトライ上限 3 回を超えたものはスキップ）
   const unprocessed = await prisma.rawEvent.findMany({
     where: {
       processed: false,
+      retryCount: { lt: 3 },
     },
     include: { source: true },
     orderBy: { fetchedAt: "desc" },
@@ -42,7 +43,10 @@ export async function classifyEvents(
     commentCount: Number((re.payload as Record<string, unknown>).descendants ?? 0),
   }));
 
-  const results = await classifyBatch(classifyInputs);
+  const results = await classifyBatch(classifyInputs, 5, (p) => {
+    process.stdout.write(`\r  Classifying... [${p.completed}/${p.total}] (✓${p.succeeded} ✗${p.failed})`);
+  });
+  process.stdout.write("\n");
 
   let relevantCount = 0;
   let totalCost = 0;
@@ -54,6 +58,13 @@ export async function classifyEvents(
 
     if ("error" in result) {
       console.warn(`  ✗ Classification failed for ${classifyInputs[i].title}: ${result.error}`);
+      await prisma.rawEvent.update({
+        where: { id: rawEvent.id },
+        data: {
+          retryCount: { increment: 1 },
+          lastError: String(result.error).slice(0, 500),
+        },
+      });
       continue;
     }
 
