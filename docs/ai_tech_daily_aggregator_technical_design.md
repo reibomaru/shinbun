@@ -10,8 +10,10 @@
 |---|---|---|
 | フロントエンド | Next.js (App Router) | SSR対応、React Server Components |
 | UIライブラリ | shadcn/ui + Tailwind CSS | 高速開発、カスタマイズ性 |
-| バックエンド | Next.js API Routes | フロントと統合、個人利用規模で十分 |
-| バッチ/スケジュール | GitHub Actions | 無料枠あり、Claude APIキーをSecretで安全管理 |
+| ORM | Prisma | 型安全なDBアクセス、マイグレーション管理 |
+| バリデーション | Zod | 設定ファイルのスキーマ検証 |
+| バッチ/スケジュール | GitHub Actions（予定） | 無料枠あり、Claude APIキーをSecretで安全管理 |
+| バッチ実行 | tsx | TypeScriptスクリプトを直接実行 |
 | DB | Supabase (PostgreSQL) | pgvector対応、無料枠で個人利用可 |
 | ベクトル検索 | pgvector (Supabase) | 別サービス不要（Phase 2〜） |
 | LLM | Anthropic API (Claude) | 日本語品質、コスト効率 |
@@ -19,10 +21,12 @@
 | ホスティング | Vercel | Next.jsとの親和性、無料枠あり |
 | 通知 | Slack Incoming Webhook | シンプル、Bolt SDK不要 |
 | 監視 | Sentry（無料枠） | エラー追跡 |
+| テスト | Vitest | 高速、ESM対応 |
 
 > 個人利用のためInngest/BullMQのような外部キューは不要。
-> バッチ処理は GitHub Actions で実行し、Anthropic API キーを GitHub Secrets で管理する。
+> バッチ処理は GitHub Actions で実行予定（現在はローカルで `tsx` により実行）。Anthropic API キーは GitHub Secrets で管理する。
 > Next.js（Vercel）はWeb UIの配信のみを担う。
+> DB アクセスには Prisma ORM を使用し、`DATABASE_URL` 環境変数で接続する。
 
 ---
 
@@ -199,23 +203,25 @@ watchlist（独立テーブル。entity.idまたはキーワードを参照）
 
 ## 3. 設定管理
 
-すべての設定は `config/` 配下の YAML ファイルで管理する。管理画面は提供しない。
-秘匿情報（APIキー等）のみ環境変数（ローカル: `.env.local` / CI: GitHub Secrets）で管理する。
+すべての設定は `backend/config/` 配下の YAML ファイルで管理する。管理画面は提供しない。
+秘匿情報（APIキー等）のみ環境変数（ローカル: `.env` / CI: GitHub Secrets）で管理する。
 
 ### 3.1 環境変数
 
 秘匿情報のみ。設定値は YAML で管理するため環境変数には含めない。
 
-**ローカル開発（`.env.local`）/ GitHub Secrets（本番）共通:**
+**ローカル開発（`.env`）/ GitHub Secrets（本番）共通:**
 
 ```env
-ANTHROPIC_API_KEY=sk-ant-xxx
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_KEY=xxx
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+GITHUB_TOKEN=ghp_xxx              # GitHub API レートリミット緩和用（任意）
+ANTHROPIC_API_KEY=sk-ant-xxx      # LLM処理用（未実装）
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx  # 通知用（未実装）
 ```
 
-### 3.2 `config/settings.yaml` — 配信設定
+> Prisma は `DATABASE_URL` で Supabase PostgreSQL に接続する。`SUPABASE_URL` / `SUPABASE_SERVICE_KEY` は使用しない。
+
+### 3.2 `backend/config/settings.yaml` — 配信設定
 
 ```yaml
 digest:
@@ -228,7 +234,7 @@ cost_alert:
   daily_usd: 5          # 日次コストアラート閾値
 ```
 
-### 3.3 `config/sources.yaml` — 情報源設定
+### 3.3 `backend/config/sources.yaml` — 情報源設定
 
 ```yaml
 sources:
@@ -237,7 +243,7 @@ sources:
     config:
       owner: anthropics
       repo: claude-code
-    polling_interval: 3600   # 秒
+    polling_interval: 3600
 
   - type: github_repo
     name: Next.js
@@ -261,12 +267,14 @@ sources:
   - type: hackernews
     name: Hacker News
     config:
-      mode: top        # top / best / new
-      min_score: 10    # 最低スコアフィルタ
+      mode: top
+      min_score: 10
     polling_interval: 1800
 ```
 
-### 3.4 `config/watchlist.yaml` — ウォッチリスト
+> 設定ファイルは Zod スキーマで読み込み時にバリデーションされる（`backend/lib/config.ts`）。
+
+### 3.4 `backend/config/watchlist.yaml` — ウォッチリスト
 
 ```yaml
 entities:
@@ -299,12 +307,12 @@ keywords:
 ### 4.1 処理ステージ概要
 
 ```
-情報取得
+情報取得（実装済み: github.ts / rss.ts / hackernews.ts）
   ↓
-[Stage 1] ルールベースフィルタ（コスト: $0）
-  - content_hash による完全重複排除
-  - url_normalized による URL重複排除
-  - ソースごとの最低品質フィルタ（例: HN score > 10）
+[Stage 1] ルールベースフィルタ（コスト: $0）（実装済み: fetch.ts の deduplicateEvents）
+  - content_hash（SHA-256）による完全重複排除
+  - externalId（ソース×外部ID ユニーク制約）による重複排除
+  - ソースごとの最低品質フィルタ（例: HN score > min_score）
   ↓
 [Stage 2] 軽量LLM分類（Claude Haiku）
   - 関連度判定（AI/Web開発に関係あるか）
@@ -398,12 +406,13 @@ keywords:
 
 ### 5.1 多段重複排除
 
-| レイヤー | 手法 | 実行ステージ |
-|---|---|---|
-| 完全一致 | `content_hash`（SHA-256） | Stage 1 |
-| URL一致 | `url_normalized`（クエリパラメータ除去・www統一・末尾スラッシュ統一） | Stage 1 |
-| タイトル類似 | タイトル正規化 + Levenshtein距離 < 0.2 | Stage 2 |
-| 意味的重複 | embedding cosine similarity > 0.92 | Stage 4（Phase 2〜） |
+| レイヤー | 手法 | 実行ステージ | 実装状況 |
+|---|---|---|---|
+| 完全一致 | `content_hash`（SHA-256） | Stage 1 | 実装済み（`deduplicateEvents`） |
+| 外部ID一致 | `sourceId + externalId` ユニーク制約 | Stage 1 | 実装済み（DB制約 + `deduplicateEvents`） |
+| URL一致 | `url_normalized`（クエリパラメータ除去・www統一・末尾スラッシュ統一） | Stage 1 | URL正規化ロジック実装済み（`url.ts`）。DB照合は未実装 |
+| タイトル類似 | タイトル正規化 + Levenshtein距離 < 0.2 | Stage 2 | 未実装 |
+| 意味的重複 | embedding cosine similarity > 0.92 | Stage 4（Phase 2〜） | 未実装 |
 
 ### 5.2 マージ処理
 
@@ -419,44 +428,52 @@ keywords:
 ### 6.1 全体アーキテクチャ図
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                      External Sources                          │
-│  GitHub API   RSS Feeds   HN API   YouTube API   arXiv        │
-└────────┬──────────────┬──────────┬────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│              External Sources                 │
+│  GitHub API      RSS Feeds      HN API       │
+│  (実装済み)      (実装済み)     (実装済み)    │
+└────────┬──────────────┬──────────┬───────────┘
          └──────────────┴──────────┘
                         │
           ┌─────────────▼──────────────────────────┐
-          │           GitHub Actions                │
-          │  fetch.yml       (毎時: cron)           │
-          │  fetch-hn.yml    (30分毎: cron)         │
-          │  digest.yml      (毎朝: cron)           │
-          │  cleanup.yml     (毎週: cron)           │
+          │  バッチ処理（backend/scripts/fetch.ts） │
           │                                         │
-          │  scripts/ 配下の Node.js スクリプトを実行│
+          │  現在: ローカルで tsx により手動実行      │
+          │  予定: GitHub Actions (cron) で自動実行  │
+          │                                         │
+          │  Prisma ORM 経由で DB アクセス           │
           └──────┬──────────────────────┬───────────┘
                  │                      │
      ┌───────────▼──┐        ┌──────────▼─────────┐
      │   Supabase   │        │   Anthropic API    │
-     │  PostgreSQL  │        │  (ANTHROPIC_API_KEY │
-     │  + pgvector  │        │   via GH Secrets)  │
-     └──────┬───────┘        │   Claude Haiku     │
-            │                │   Claude Sonnet    │
+     │  PostgreSQL  │        │  （未実装）          │
+     │  + pgvector  │        │   Claude Haiku     │
+     └──────┬───────┘        │   Claude Sonnet    │
             │                └────────────────────┘
     ┌────────┴──────────┐
     │                   │
 ┌───▼──────────┐  ┌─────▼────────────┐
 │ Next.js UI   │  │  Slack Webhook   │
-│ (Vercel)     │  │  - Daily Digest  │
-│  Dashboard   │  │  - 緊急アラート  │
-│  保存/設定   │  │  - コストアラート│
+│ (mock/)      │  │  （未実装）       │
+│ モックデータ  │  │  - Daily Digest  │
+│ DB未接続     │  │  - 緊急アラート  │
 └──────────────┘  └──────────────────┘
 
-  ※ Vercel は Web UI の配信のみ。バッチ処理は GitHub Actions が担う。
+  ※ 現在実装済み: データ取得 → 重複排除 → raw_event保存 の一連のフロー
+  ※ フロントエンドはモックデータで動作。DB連携・LLM処理・Slack通知は未実装。
 ```
 
 ### 6.2 GitHub Actions ワークフロー
 
-#### ジョブ一覧
+#### 実装済みワークフロー
+
+| ワークフローファイル | トリガー | 処理内容 |
+|---|---|---|
+| `test.yml` | push/PR to main | `npm test`（Vitest）によるユニットテスト |
+| `claude.yml` | Issue/PRコメント（`@claude`） | Claude Code によるインタラクティブアシスタンス |
+| `claude-code-review.yml` | PR opened | 設計書との整合性を自動レビュー |
+
+#### 未実装ワークフロー（予定）
 
 | ワークフローファイル | スケジュール（cron式） | 処理内容 |
 |---|---|---|
@@ -465,16 +482,42 @@ keywords:
 | `digest.yml` | `0 23 * * *`（UTC 23:00 = JST 08:00） | 重要度順に整形 → Slack配信 |
 | `cleanup.yml` | `0 0 * * 0`（毎週日曜） | raw_event 30日超・read_status 90日超を削除 |
 
-#### GitHub Secrets 設定
+> 現在バッチ処理はローカルで `npm run fetch`（`tsx --env-file=.env backend/scripts/fetch.ts`）により手動実行する。
+
+#### GitHub Secrets 設定（予定）
 
 | Secret名 | 用途 |
 |---|---|
+| `DATABASE_URL` | Supabase PostgreSQL 接続文字列（Prisma用） |
 | `ANTHROPIC_API_KEY` | Claude API 呼び出し（Haiku / Sonnet） |
-| `SUPABASE_URL` | Supabase 接続先 URL |
-| `SUPABASE_SERVICE_KEY` | Supabase サービスロールキー（書き込み権限） |
 | `SLACK_WEBHOOK_URL` | Slack 通知送信先 |
 
-#### ワークフロー定義例
+#### ワークフロー定義例（実装済み: test.yml）
+
+```yaml
+# .github/workflows/test.yml
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+```
+
+#### ワークフロー定義例（未実装: fetch.yml 予定）
 
 ```yaml
 # .github/workflows/fetch.yml
@@ -483,7 +526,7 @@ name: Fetch & Process
 on:
   schedule:
     - cron: '0 * * * *'
-  workflow_dispatch:          # 手動実行も可能
+  workflow_dispatch:
 
 jobs:
   fetch:
@@ -496,43 +539,14 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: node scripts/fetch.js
+      - run: npx tsx backend/scripts/fetch.ts
         env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
-```yaml
-# .github/workflows/digest.yml
-name: Daily Digest
-
-on:
-  schedule:
-    - cron: '0 23 * * *'     # UTC 23:00 = JST 08:00
-  workflow_dispatch:
-
-jobs:
-  digest:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: node scripts/digest.js
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-```
-
-#### GitHub Actions 実行時間の見積もり
+#### GitHub Actions 実行時間の見積もり（バッチワークフロー実装後）
 
 | ジョブ | 頻度 | 1回あたり | 月間合計 |
 |---|---|---|---|
@@ -548,27 +562,36 @@ jobs:
 
 ### 6.3 データフロー詳細
 
-```
-[毎時 Fetchジョブ（GitHub Actions: fetch.yml）]
+#### 実装済みフロー（backend/scripts/fetch.ts + backend/lib/usecases/）
 
-  sources.yaml（リポジトリ内の設定ファイル）
+```
+  backend/config/sources.yaml（設定ファイル・Zodバリデーション）
       │
       ▼
-  source テーブルから有効なソースを取得
+  source テーブルと同期（upsert: type+name ユニーク制約）
       │
       ▼
-  各ソースをポーリング ────────────────────────────┐
-      │                                            │
-      ▼                                       エラー時
-  raw_event に保存                         指数バックオフでリトライ
-      │                                      (1m→2m→4m→8m→16m)
-      ▼                                      error_count++
-  [Stage 1] ルールベースフィルタ
-    - content_hash 重複チェック
-    - url_normalized 重複チェック
-    - 品質フィルタ（HN score等）
-      │ 通過
+  各ソースを並列フェッチ（Promise.allSettled）──────┐
+      │                                              │
+      │  github.ts  → GitHub Releases API            │
+      │  rss.ts     → rss-parser                エラー時
+      │  hackernews.ts → Firebase HN API        error_count++
+      │                  (上位50件, 10件ずつ並列) lastError 記録
       ▼
+  [Stage 1] 重複排除（deduplicateEvents）
+    - externalId による既存チェック
+    - content_hash（SHA-256）による既存チェック
+      │ 新規のみ通過
+      ▼
+  raw_event に一括保存（createMany + skipDuplicates）
+      │
+      ▼
+  source.lastFetchedAt 更新、errorCount リセット
+```
+
+#### 未実装フロー（予定）
+
+```
   [Stage 2] Haiku分類（バッチ処理）
     - 関連度判定
     - topic / format ラベル付け
@@ -588,18 +611,8 @@ jobs:
       ▼
   llm_cost 集計 → 日次閾値チェック → 超過時 Slack アラート
 
-[毎朝 Digestジョブ（GitHub Actions: digest.yml / UTC 23:00）]
-
-  item テーブルから過去24h分を取得
-      │
-      ▼
-  importance_score 降順でソート
-      │
-      ▼
-  Top N + カテゴリ別ハイライトを整形
-      │
-      ▼
-  Slack Incoming Webhook でメッセージ送信
+  [毎朝 Digestジョブ]
+  item テーブルから過去24h分を取得 → Slack配信
 ```
 
 ### 6.4 ディレクトリ構成
@@ -607,58 +620,85 @@ jobs:
 ```
 shinbun/
 ├── .github/
-│   └── workflows/
-│       ├── fetch.yml               # 毎時フェッチジョブ
-│       ├── fetch-hn.yml            # 30分毎 HN フェッチジョブ
-│       ├── digest.yml              # 毎朝 Daily Digestジョブ
-│       └── cleanup.yml             # 毎週クリーンアップジョブ
+│   ├── workflows/
+│   │   ├── test.yml                # push/PR時のユニットテスト
+│   │   ├── claude.yml              # Claude Code インタラクティブ
+│   │   └── claude-code-review.yml  # PR自動レビュー（設計書整合性チェック）
+│   └── scripts/                    # CI用スクリプト
 │
-├── config/                         # 全設定ファイル（管理画面なし・YAML直接編集）
-│   ├── settings.yaml               # 配信時刻・件数・コストアラート閾値
-│   ├── sources.yaml                # 情報源リスト
-│   └── watchlist.yaml              # ウォッチリスト（エンティティ・キーワード）
+├── backend/                        # バッチ処理・バックエンドロジック
+│   ├── config/                     # 全設定ファイル（管理画面なし・YAML直接編集）
+│   │   ├── settings.yaml           # 配信時刻・件数・コストアラート閾値
+│   │   ├── sources.yaml            # 情報源リスト
+│   │   └── watchlist.yaml          # ウォッチリスト（エンティティ・キーワード）
+│   │
+│   ├── scripts/                    # バッチスクリプト（tsx で実行）
+│   │   ├── fetch.ts                # フェッチ → Stage 1 重複排除 → raw_event保存
+│   │   └── fetch.test.ts           # fetch.ts のユニットテスト
+│   │
+│   ├── lib/
+│   │   ├── config.ts               # config/*.yaml の読み込み（Zod バリデーション）
+│   │   ├── config.test.ts
+│   │   ├── url.ts                  # URL正規化・contentHash（SHA-256）
+│   │   ├── url.test.ts
+│   │   ├── container.ts            # DI コンテナ（リポジトリのシングルトン生成・実装切替）
+│   │   ├── models/
+│   │   │   └── raw-event.ts        # RawEventInput / FetchResult 型定義
+│   │   ├── repositories/
+│   │   │   ├── source-repository.ts     # ISourceRepository インターフェース
+│   │   │   ├── raw-event-repository.ts  # IRawEventRepository インターフェース
+│   │   │   └── prisma/
+│   │   │       ├── prisma-source-repository.ts    # Prisma 実装
+│   │   │       └── prisma-raw-event-repository.ts # Prisma 実装
+│   │   ├── usecases/
+│   │   │   ├── fetch-source.ts         # ソース種別によるフェッチャー呼び分け
+│   │   │   ├── sync-sources.ts         # DB source テーブルとの upsert 同期
+│   │   │   ├── deduplicate-events.ts   # externalId / content_hash による重複排除
+│   │   │   └── save-events.ts          # raw_event への一括保存
+│   │   ├── fetchers/
+│   │   │   ├── types.ts            # SourceConfig の再エクスポート（後方互換）
+│   │   │   ├── github.ts           # GitHub Releases API フェッチャー
+│   │   │   ├── github.test.ts
+│   │   │   ├── rss.ts              # RSS/Atom フィードフェッチャー
+│   │   │   ├── rss.test.ts
+│   │   │   ├── hackernews.ts       # Hacker News API フェッチャー
+│   │   │   └── hackernews.test.ts
+│   │   └── db/
+│   │       └── client.ts           # Prisma クライアント（シングルトン）
+│   │
+│   ├── migration/                  # DBスキーマ・マイグレーション（Prisma）
+│   │   ├── schema.prisma
+│   │   └── migrations/
+│   │
+│   └── test-fixtures/              # テスト用データ
 │
-├── scripts/                        # GitHub Actions から直接実行するスクリプト
-│   ├── fetch.js                    # フェッチ → Stage 1-3処理
-│   ├── fetch-hn.js                 # HN フェッチ → Stage 1-3処理
-│   ├── digest.js                   # Slack Daily Digest 送信
-│   └── cleanup.js                  # データクリーンアップ
+├── mock/                           # Next.js フロントエンド（モックUI）
+│   ├── app/                        # Next.js App Router
+│   │   ├── page.tsx                # ダッシュボード
+│   │   ├── layout.tsx
+│   │   ├── login/page.tsx          # ログイン画面
+│   │   ├── items/[id]/page.tsx     # 記事詳細
+│   │   └── saved/page.tsx          # 保存一覧
+│   ├── components/
+│   │   ├── Header.tsx              # ナビゲーションヘッダー
+│   │   ├── ArticleCard.tsx         # 記事カードコンポーネント
+│   │   └── ui/                     # shadcn/ui コンポーネント
+│   └── lib/
+│       └── mock-data.ts            # モックデータ（DB未接続）
 │
-├── app/                            # Next.js（Web UI のみ）
-│   ├── page.tsx                    # ダッシュボード一面
-│   ├── items/[id]/page.tsx         # 記事詳細
-│   ├── saved/page.tsx              # 保存一覧
-│   └── api/
-│       ├── items/route.ts          # アイテム一覧API（UI用）
-│       ├── feedback/route.ts       # フィードバック記録API
-│       └── saved/route.ts          # 保存API
+├── docs/                           # 設計ドキュメント
 │
-├── lib/
-│   ├── config.ts                   # config/*.yaml の読み込みユーティリティ
-│   ├── fetchers/
-│   │   ├── github.ts
-│   │   ├── rss.ts
-│   │   ├── hackernews.ts
-│   │   └── changelog.ts
-│   ├── processors/
-│   │   ├── filter.ts               # Stage 1 ルールベース
-│   │   ├── classify.ts             # Stage 2 (Claude Haiku)
-│   │   └── summarize.ts            # Stage 3 (Claude Sonnet)
-│   ├── db/
-│   │   └── client.ts               # Supabase クライアント
-│   ├── slack.ts                    # Webhook 送信
-│   └── scoring.ts                  # 重要度スコアリング
-│
-├── migration/                     # DBスキーマ・マイグレーション（Prisma）
-│   ├── schema.prisma
-│   └── migrations/
-│
-└── .env.local                      # gitignore 対象（ローカル開発用・秘匿情報のみ）
+├── package.json                    # ルートプロジェクト設定
+├── tsconfig.json
+├── vitest.config.mts
+├── docker-compose.yml
+├── CLAUDE.md                       # プロジェクトガイドライン
+└── .env                            # gitignore 対象（ローカル開発用・秘匿情報のみ）
 ```
 
-> `config/*.yaml` はリポジトリにコミットして管理する。設定変更はファイル編集 → `main` へのプッシュで反映される。
-> `scripts/` は GitHub Actions の `ubuntu-latest` ランナー上で直接 `node scripts/fetch.js` として実行される。
-> `lib/` 配下のモジュールは `scripts/` と `app/` の両方から共有する。
+> `backend/config/*.yaml` はリポジトリにコミットして管理する。設定変更はファイル編集 → `main` へのプッシュで反映される。
+> バッチスクリプトはローカルでは `npm run fetch`（`tsx --env-file=.env backend/scripts/fetch.ts`）で実行する。GitHub Actions 実装後は `npx tsx backend/scripts/fetch.ts` で実行予定。
+> `backend/lib/` 配下のモジュールは `backend/scripts/` から参照される。フロントエンド（`mock/`）は現在モックデータを使用しており、DB未接続。
 
 ### 6.5 Supabase 構成
 
@@ -667,6 +707,8 @@ shinbun/
 | PostgreSQL | メインDB（全テーブル） | 無料枠（500MB） |
 | pgvector | ベクトル検索（Phase 2〜） | 無料枠に含む |
 
+> DB アクセスには Prisma ORM を使用する。接続先は `DATABASE_URL` 環境変数で指定する。
+> Supabase の JavaScript SDK（`@supabase/supabase-js`）は使用しない。
 > raw_event を30日で削除すれば、~500件/日の規模で500MBは問題なし。
 > item テーブルが1年以上蓄積し1GBを超えた場合は Supabase Pro（$25/月）へ移行を検討。
 
@@ -678,13 +720,29 @@ shinbun/
 |---|---|---|
 | Hobby | $0 | Web UI 配信のみ。Cron 不要のため無料枠で十分 |
 
-### 6.7 GitHub Actions（パブリックリポジトリ前提）
+### 6.7 npm スクリプト
+
+```json
+{
+  "scripts": {
+    "db:migrate": "prisma migrate dev --schema backend/migration/schema.prisma",
+    "db:studio": "prisma studio --schema backend/migration/schema.prisma",
+    "db:generate": "prisma generate --schema backend/migration/schema.prisma",
+    "db:push": "prisma db push --schema backend/migration/schema.prisma",
+    "db:seed": "prisma db seed",
+    "fetch": "tsx --env-file=.env backend/scripts/fetch.ts",
+    "test": "vitest run"
+  }
+}
+```
+
+### 6.8 GitHub Actions（パブリックリポジトリ前提）
 
 リポジトリはパブリックとする。パブリックリポジトリの GitHub Actions は**実行時間無制限・無料**。
 
 APIキー等の機密情報は必ず **GitHub Secrets** で管理し、コードおよびログには含めない。
 
-#### 実行時間内訳
+#### 実行時間内訳（バッチワークフロー実装後）
 
 | ジョブ | 頻度/月 | 1回あたり | 月間合計 |
 |---|---|---|---|
@@ -696,7 +754,7 @@ APIキー等の機密情報は必ず **GitHub Secrets** で管理し、コード
 
 > パブリックリポジトリであれば上記すべて **$0**。
 
-### 6.8 月額コスト試算
+### 6.9 月額コスト試算
 
 #### 前提
 
@@ -763,12 +821,13 @@ Claude Code Pro プランの枠内に収まっているか確認するため、`
 
 | 項目 | 対策 |
 |---|---|
-| APIキー管理（バッチ） | GitHub Secrets に登録。ワークフローの `env:` から参照し、コード・ログには含めない |
-| APIキー管理（Web UI） | Vercel Environment Variables に登録。`.env.local` はローカル開発専用（gitignore） |
+| APIキー管理（バッチ） | GitHub Secrets に登録予定。ローカルでは `.env` ファイルで管理（gitignore対象） |
+| APIキー管理（Web UI） | Vercel Environment Variables に登録予定。`.env` はローカル開発専用（gitignore） |
+| DB接続文字列 | `DATABASE_URL` で Prisma 経由で Supabase PostgreSQL に接続。コードにハードコードしない |
 | パブリックリポジトリ対策 | Secrets はコードに埋め込まない。`console.log` 等でのキー出力を禁止する |
 | Web UI保護 | Vercel Password Protection または Basic認証 |
 | 外部データのサニタイズ | 外部取得データの表示時に XSS 対策を実施 |
-| DB接続 | Supabase Service Key（書き込み権限）は GitHub Secrets と Vercel Env Variables のみで管理 |
+| DB接続 | `DATABASE_URL`（Prisma 接続文字列）は `.env` / GitHub Secrets / Vercel Env Variables のみで管理 |
 | Actions ログ | Secrets の値は GitHub が自動的にログからマスクする。ただし加工した値は手動でマスク要 |
 
 ---
