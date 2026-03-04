@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { gemini, MODELS } from "../gemini.js";
 import { withRetry } from "../retry.js";
+import { sanitizeLlmJson } from "./summarize.js";
 
 /** 分類結果スキーマ */
 const ClassificationSchema = z.object({
@@ -61,11 +62,18 @@ export async function classifyItem(
     { maxRetries: 3, baseDelayMs: 1000 },
   );
 
-  const text = response.text ?? "";
+  const text = sanitizeLlmJson(response.text ?? "");
   const parsed = ClassificationSchema.parse(JSON.parse(text));
 
   // Gemini 無料枠なのでコスト 0
   return { ...parsed, llmCost: 0 };
+}
+
+export interface BatchProgress {
+  completed: number;
+  total: number;
+  succeeded: number;
+  failed: number;
 }
 
 /**
@@ -74,8 +82,11 @@ export async function classifyItem(
 export async function classifyBatch(
   items: ClassifyInput[],
   concurrency = 5,
+  onProgress?: (progress: BatchProgress) => void,
 ): Promise<(ClassificationResult | { error: string })[]> {
   const results: (ClassificationResult | { error: string })[] = [];
+  let succeeded = 0;
+  let failed = 0;
 
   for (let i = 0; i < items.length; i += concurrency) {
     const chunk = items.slice(i, i + concurrency);
@@ -86,10 +97,14 @@ export async function classifyBatch(
     for (const result of chunkResults) {
       if (result.status === "fulfilled") {
         results.push(result.value);
+        succeeded++;
       } else {
         results.push({ error: String(result.reason) });
+        failed++;
       }
     }
+
+    onProgress?.({ completed: results.length, total: items.length, succeeded, failed });
   }
 
   return results;

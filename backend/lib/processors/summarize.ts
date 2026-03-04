@@ -71,6 +71,65 @@ export async function summarizeItem(input: SummarizeInput): Promise<SummaryResul
   return await callSummarize(input, MODELS.FLASH_LITE);
 }
 
+/**
+ * 未閉じの括弧を閉じる
+ */
+function closeBrackets(text: string): string {
+  let inString = false;
+  let escaped = false;
+  const stack: string[] = [];
+
+  for (const ch of text) {
+    if (escaped) { escaped = false; continue; }
+    if (ch === "\\" && inString) { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") stack.push("}");
+    else if (ch === "[") stack.push("]");
+    else if ((ch === "}" || ch === "]") && stack.length > 0 && stack[stack.length - 1] === ch) {
+      stack.pop();
+    }
+  }
+
+  return text + stack.reverse().join("");
+}
+
+/**
+ * LLM 応答の JSON をサニタイズ
+ * - マークダウンコードブロック除去
+ * - 末尾の不完全 JSON 修復（maxOutputTokens による切り詰め対応）
+ *   配列内で切り詰められたケースにも対応
+ */
+export function sanitizeLlmJson(raw: string): string {
+  let text = raw.trim();
+
+  // マークダウンコードブロック除去: ```json ... ``` or ``` ... ```
+  text = text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/, "");
+  text = text.trim();
+
+  // そのままパースできればそのまま返す
+  try { JSON.parse(text); return text; } catch { /* 修復を試みる */ }
+
+  // 最初の '{' を探す
+  const start = text.indexOf("{");
+  if (start === -1) throw new Error("No JSON object found in LLM response");
+  text = text.slice(start);
+
+  // 末尾から '}' を探し、未閉じの括弧を閉じてパースを試みる
+  let pos = text.length;
+  while (pos > 0) {
+    const bracePos = text.lastIndexOf("}", pos - 1);
+    if (bracePos === -1) break;
+
+    const candidate = closeBrackets(text.slice(0, bracePos + 1));
+    try { JSON.parse(candidate); return candidate; } catch { /* 次の位置を試す */ }
+
+    pos = bracePos;
+  }
+
+  throw new Error("Failed to repair truncated JSON from LLM response");
+}
+
 async function callSummarize(
   input: SummarizeInput,
   model: string,
@@ -89,11 +148,18 @@ async function callSummarize(
     { maxRetries: 3, baseDelayMs: 1000 },
   );
 
-  const text = response.text ?? "";
+  const text = sanitizeLlmJson(response.text ?? "");
   const parsed = SummarySchema.parse(JSON.parse(text));
 
   // Gemini 無料枠なのでコスト 0
   return { ...parsed, llmCost: 0, modelUsed: model };
+}
+
+export interface BatchProgress {
+  completed: number;
+  total: number;
+  succeeded: number;
+  failed: number;
 }
 
 /**
@@ -102,8 +168,11 @@ async function callSummarize(
 export async function summarizeBatch(
   items: SummarizeInput[],
   concurrency = 3,
+  onProgress?: (progress: BatchProgress) => void,
 ): Promise<(SummaryResult | { error: string })[]> {
   const results: (SummaryResult | { error: string })[] = [];
+  let succeeded = 0;
+  let failed = 0;
 
   for (let i = 0; i < items.length; i += concurrency) {
     const chunk = items.slice(i, i + concurrency);
@@ -114,10 +183,14 @@ export async function summarizeBatch(
     for (const result of chunkResults) {
       if (result.status === "fulfilled") {
         results.push(result.value);
+        succeeded++;
       } else {
         results.push({ error: String(result.reason) });
+        failed++;
       }
     }
+
+    onProgress?.({ completed: results.length, total: items.length, succeeded, failed });
   }
 
   return results;
