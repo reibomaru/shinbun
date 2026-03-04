@@ -93,14 +93,23 @@ shinbun/
 ## 開発コマンド
 
 ```bash
+# 依存インストール
+pnpm install
+
 # フロントエンド開発サーバー
-cd mock && npm run dev
+pnpm --filter mock dev
 
 # ビルド
-cd mock && npm run build
+pnpm --filter mock build
 
-# リント
-cd mock && npm run lint
+# リント（バックエンド）
+pnpm run lint
+
+# リント（フロントエンド）
+pnpm --filter mock lint
+
+# テスト
+pnpm test
 ```
 
 ## Git ワークフロー
