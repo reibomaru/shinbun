@@ -12,11 +12,11 @@
 | UIライブラリ | shadcn/ui + Tailwind CSS | 高速開発、カスタマイズ性 |
 | ORM | Prisma | 型安全なDBアクセス、マイグレーション管理 |
 | バリデーション | Zod | 設定ファイルのスキーマ検証 |
-| バッチ/スケジュール | GitHub Actions（予定） | 無料枠あり、Claude APIキーをSecretで安全管理 |
+| バッチ/スケジュール | GitHub Actions | 無料枠あり、APIキーをSecretで安全管理 |
 | バッチ実行 | tsx | TypeScriptスクリプトを直接実行 |
 | DB | Supabase (PostgreSQL) | pgvector対応、無料枠で個人利用可 |
 | ベクトル検索 | pgvector (Supabase) | 別サービス不要（Phase 2〜） |
-| LLM | Anthropic API (Claude) | 日本語品質、コスト効率 |
+| LLM | Google Gemini API | 無料枠あり、日本語対応 |
 | 埋め込み | Voyage AI or OpenAI | 高品質ベクトル（Phase 2〜） |
 | ホスティング | Vercel | Next.jsとの親和性、無料枠あり |
 | 通知 | Slack Incoming Webhook | シンプル、Bolt SDK不要 |
@@ -24,7 +24,7 @@
 | テスト | Vitest | 高速、ESM対応 |
 
 > 個人利用のためInngest/BullMQのような外部キューは不要。
-> バッチ処理は GitHub Actions で実行予定（現在はローカルで `tsx` により実行）。Anthropic API キーは GitHub Secrets で管理する。
+> バッチ処理は GitHub Actions で実行（ローカルでは `tsx` により手動実行も可）。Gemini API キーは GitHub Secrets で管理する。
 > Next.js（Vercel）はWeb UIの配信のみを担う。
 > DB アクセスには Prisma ORM を使用し、`DATABASE_URL` 環境変数で接続する。
 
@@ -72,7 +72,7 @@
 |---|---|---|
 | id | UUID | PK |
 | raw_event_id | UUID | FK → raw_event |
-| item_type | ENUM | `release / article / video / paper / changelog` |
+| item_type | TEXT | `release / article / video / paper / changelog` 等 |
 | title | TEXT | タイトル |
 | url | TEXT | 原文URL |
 | url_normalized | TEXT | 正規化済みURL（重複検知用） |
@@ -96,7 +96,7 @@
 | カラム | 型 | 説明 |
 |---|---|---|
 | item_id | UUID | FK → item |
-| label_type | ENUM | `topic / format / difficulty` |
+| label_type | TEXT | `topic / format / difficulty` 等 |
 | label_value | TEXT | ラベル値 |
 
 #### entity
@@ -105,7 +105,7 @@
 | カラム | 型 | 説明 |
 |---|---|---|
 | id | UUID | PK |
-| entity_type | ENUM | `library / model / company / repo` |
+| entity_type | TEXT | `library / model / company / repo` 等 |
 | name | TEXT | 正式名称 |
 | aliases | JSONB | 別名リスト（例: `["GPT-4", "gpt4"]`） |
 | official_url | TEXT | 公式URL |
@@ -215,8 +215,8 @@ watchlist（独立テーブル。entity.idまたはキーワードを参照）
 ```env
 DATABASE_URL=postgresql://user:password@host:5432/dbname
 GITHUB_TOKEN=ghp_xxx              # GitHub API レートリミット緩和用（任意）
-ANTHROPIC_API_KEY=sk-ant-xxx      # LLM処理用（未実装）
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx  # 通知用（未実装）
+GEMINI_API_KEY=xxx                # Gemini API（分類・要約処理）
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx  # 通知用
 ```
 
 > Prisma は `DATABASE_URL` で Supabase PostgreSQL に接続する。`SUPABASE_URL` / `SUPABASE_SERVICE_KEY` は使用しない。
@@ -314,14 +314,14 @@ keywords:
   - externalId（ソース×外部ID ユニーク制約）による重複排除
   - ソースごとの最低品質フィルタ（例: HN score > min_score）
   ↓
-[Stage 2] 軽量LLM分類（Claude Haiku）
+[Stage 2] 軽量LLM分類（Gemini Flash Lite）
   - 関連度判定（AI/Web開発に関係あるか）
   - topic / format ラベル付け
   - 緊急度判定（セキュリティ / Breaking Change）
   ↓ 関連ありのみ通過
   ├── is_urgent=true → 即時 Slack 緊急アラート
   ↓
-[Stage 3] 高品質LLM処理（Claude Sonnet）※上位100件のみ
+[Stage 3] 高品質LLM処理（Gemini Flash）※上位100件のみ
   - 日本語要約生成（short / medium / key_points / why_it_matters）
   - エンティティ抽出
   - 重要度スコアリング
@@ -335,25 +335,27 @@ keywords:
 
 | ステージ | モデル | 用途 | 想定コスト/件 |
 |---|---|---|---|
-| Stage 2 | Claude Haiku 4.5 | 分類・フィルタ | ~$0.001 |
-| Stage 3 | Claude Sonnet 4.6 | 要約・スコアリング | ~$0.01 |
+| Stage 2 | Gemini 2.5 Flash Lite | 分類・フィルタ | $0（無料枠） |
+| Stage 3 | Gemini 2.5 Flash | 要約・スコアリング | $0（無料枠） |
 | Stage 4 | Voyage AI / OpenAI | 埋め込み生成 | ~$0.0001 |
+
+> Gemini API は無料枠（30 RPM）で運用する。無料枠を超過した場合は従量課金（Flash Lite: $0.075/MTok入力、Flash: $0.15/MTok入力）が発生する。
 
 ### 4.3 コスト試算（月額）
 
 | 項目 | 想定件数/日 | 通過率 | 処理件数/日 | 単価 | 月額 |
 |---|---|---|---|---|---|
 | Stage 1 通過 | 500 | 80% | 400 | — | $0 |
-| Stage 2 Haiku | 400 | 50% | 400 | $0.001 | $12 |
-| Stage 3 Sonnet | — | — | 100（上位のみ） | $0.01 | $30 |
+| Stage 2 Flash Lite | 400 | 50% | 400 | $0（無料枠） | $0 |
+| Stage 3 Flash | — | — | 100（上位のみ） | $0（無料枠） | $0 |
 | Stage 4 埋め込み | — | — | Phase 2以降 | — | — |
-| **合計** | | | | | **~$42** |
+| **合計** | | | | | **$0** |
 
 ### 4.4 コスト管理ロジック
 
 - `item.llm_cost` に処理コストを記録
 - 日次コスト合計が `LLM_DAILY_COST_ALERT_USD`（デフォルト $5）を超えたら Slack に通知
-- 月次予算超過時は Stage 3 を Haiku にフォールバック
+- 月次予算超過時は Stage 3 を Flash Lite にフォールバック
 
 ### 4.5 要約生成仕様
 
@@ -370,8 +372,8 @@ keywords:
 
 | label_type | 取り得る値 |
 |---|---|
-| topic | `genai / frontend / backend / devtools / infra / security` |
-| format | `release / tutorial / benchmark / incident / paper / announcement` |
+| topic | `genai / frontend / backend / devtools / infra / security` 等（LLM出力のため動的に拡張可能） |
+| format | `release / tutorial / benchmark / incident / paper / announcement` 等（LLM出力のため動的に拡張可能） |
 | difficulty | `beginner / intermediate / advanced` |
 
 ### 4.7 エンティティ抽出
@@ -438,29 +440,29 @@ keywords:
           ┌─────────────▼──────────────────────────┐
           │  バッチ処理（backend/scripts/fetch.ts） │
           │                                         │
-          │  現在: ローカルで tsx により手動実行      │
-          │  予定: GitHub Actions (cron) で自動実行  │
+          │  GitHub Actions (cron) で自動実行          │
+          │  ローカルでは tsx により手動実行も可       │
           │                                         │
           │  Prisma ORM 経由で DB アクセス           │
           └──────┬──────────────────────┬───────────┘
                  │                      │
      ┌───────────▼──┐        ┌──────────▼─────────┐
-     │   Supabase   │        │   Anthropic API    │
-     │  PostgreSQL  │        │  （未実装）          │
-     │  + pgvector  │        │   Claude Haiku     │
-     └──────┬───────┘        │   Claude Sonnet    │
+     │   Supabase   │        │   Google Gemini    │
+     │  PostgreSQL  │        │   API（実装済み）    │
+     │  + pgvector  │        │   Flash Lite(分類) │
+     └──────┬───────┘        │   Flash(要約)      │
             │                └────────────────────┘
     ┌────────┴──────────┐
     │                   │
 ┌───▼──────────┐  ┌─────▼────────────┐
 │ Next.js UI   │  │  Slack Webhook   │
-│ (mock/)      │  │  （未実装）       │
+│ (mock/)      │  │  （実装済み）     │
 │ モックデータ  │  │  - Daily Digest  │
 │ DB未接続     │  │  - 緊急アラート  │
 └──────────────┘  └──────────────────┘
 
-  ※ 現在実装済み: データ取得 → 重複排除 → raw_event保存 の一連のフロー
-  ※ フロントエンドはモックデータで動作。DB連携・LLM処理・Slack通知は未実装。
+  ※ 実装済み: データ取得 → 重複排除 → raw_event保存 → LLM分類 → LLM要約 → Slack緊急アラート
+  ※ フロントエンドはモックデータで動作。DB連携は未実装。
 ```
 
 ### 6.2 GitHub Actions ワークフロー
@@ -473,23 +475,23 @@ keywords:
 | `claude.yml` | Issue/PRコメント（`@claude`） | Claude Code によるインタラクティブアシスタンス |
 | `claude-code-review.yml` | PR opened | 設計書との整合性を自動レビュー |
 
-#### 未実装ワークフロー（予定）
+#### バッチワークフロー
 
-| ワークフローファイル | スケジュール（cron式） | 処理内容 |
-|---|---|---|
-| `fetch.yml` | `0 * * * *`（毎時0分） | 全ソース新着取得 → Stage 1-3処理 |
-| `fetch-hn.yml` | `*/30 * * * *`（30分毎） | HN Top/Best取得 → Stage 1-3処理 |
-| `digest.yml` | `0 23 * * *`（UTC 23:00 = JST 08:00） | 重要度順に整形 → Slack配信 |
-| `cleanup.yml` | `0 0 * * 0`（毎週日曜） | raw_event 30日超・read_status 90日超を削除 |
+| ワークフローファイル | スケジュール（cron式） | 処理内容 | 状態 |
+|---|---|---|---|
+| `fetch-hn.yml` | `*/30 * * * *`（30分毎） | HN Top/Best取得 → Stage 1-3処理 | 実装済み |
+| `fetch.yml` | `0 * * * *`（毎時0分） | 全ソース新着取得 → Stage 1-3処理 | 未実装 |
+| `digest.yml` | `0 23 * * *`（UTC 23:00 = JST 08:00） | 重要度順に整形 → Slack配信 | 未実装 |
+| `cleanup.yml` | `0 0 * * 0`（毎週日曜） | raw_event 30日超・read_status 90日超を削除 | 未実装 |
 
-> 現在バッチ処理はローカルで `npm run fetch`（`tsx --env-file=.env backend/scripts/fetch.ts`）により手動実行する。
+> バッチ処理はローカルでは `npm run fetch` / `npm run fetch-hn` で手動実行、GitHub Actions で自動実行。
 
-#### GitHub Secrets 設定（予定）
+#### GitHub Secrets 設定
 
 | Secret名 | 用途 |
 |---|---|
 | `DATABASE_URL` | Supabase PostgreSQL 接続文字列（Prisma用） |
-| `ANTHROPIC_API_KEY` | Claude API 呼び出し（Haiku / Sonnet） |
+| `GEMINI_API_KEY` | Gemini API 呼び出し（Flash Lite / Flash） |
 | `SLACK_WEBHOOK_URL` | Slack 通知送信先 |
 
 #### ワークフロー定義例（実装済み: test.yml）
@@ -542,7 +544,7 @@ jobs:
       - run: npx tsx backend/scripts/fetch.ts
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
@@ -589,10 +591,10 @@ jobs:
   source.lastFetchedAt 更新、errorCount リセット
 ```
 
-#### 未実装フロー（予定）
+#### 実装済みフロー（backend/scripts/fetch-hn.ts Stage 2-3）
 
 ```
-  [Stage 2] Haiku分類（バッチ処理）
+  [Stage 2] Gemini Flash Lite 分類（バッチ処理・並列度5）
     - 関連度判定
     - topic / format ラベル付け
     - 緊急度判定
@@ -600,10 +602,10 @@ jobs:
       ├── is_urgent=true ──→ 即時 Slack 緊急アラート送信
       │
       ▼ 関連ありのみ
-  [Stage 3] Sonnet要約（上位100件のみ）
-    - 要約生成
+  [Stage 3] Gemini Flash 要約（上位100件・並列度3）
+    - 日本語要約生成（short / medium / key_points / why_it_matters）
     - エンティティ抽出
-    - 重要度スコアリング
+    - Flash 失敗時は Flash Lite にフォールバック
       │
       ▼
   item テーブルに保存
@@ -611,7 +613,7 @@ jobs:
       ▼
   llm_cost 集計 → 日次閾値チェック → 超過時 Slack アラート
 
-  [毎朝 Digestジョブ]
+  [毎朝 Digestジョブ]（未実装）
   item テーブルから過去24h分を取得 → Slack配信
 ```
 
@@ -633,30 +635,33 @@ shinbun/
 │   │   └── watchlist.yaml          # ウォッチリスト（エンティティ・キーワード）
 │   │
 │   ├── scripts/                    # バッチスクリプト（tsx で実行）
-│   │   ├── fetch.ts                # フェッチ → Stage 1 重複排除 → raw_event保存
-│   │   └── fetch.test.ts           # fetch.ts のユニットテスト
+│   │   ├── fetch.ts                # 全ソースフェッチ → Stage 1 重複排除 → raw_event保存
+│   │   ├── fetch.test.ts
+│   │   ├── fetch-hn.ts             # HNフェッチ → Stage 1-3（分類・要約）パイプライン
+│   │   └── fetch-hn.test.ts
 │   │
 │   ├── lib/
 │   │   ├── config.ts               # config/*.yaml の読み込み（Zod バリデーション）
 │   │   ├── config.test.ts
 │   │   ├── url.ts                  # URL正規化・contentHash（SHA-256）
 │   │   ├── url.test.ts
-│   │   ├── container.ts            # DI コンテナ（リポジトリのシングルトン生成・実装切替）
-│   │   ├── models/
-│   │   │   └── raw-event.ts        # RawEventInput / FetchResult 型定義
-│   │   ├── repositories/
-│   │   │   ├── source-repository.ts     # ISourceRepository インターフェース
-│   │   │   ├── raw-event-repository.ts  # IRawEventRepository インターフェース
-│   │   │   └── prisma/
-│   │   │       ├── prisma-source-repository.ts    # Prisma 実装
-│   │   │       └── prisma-raw-event-repository.ts # Prisma 実装
-│   │   ├── usecases/
-│   │   │   ├── fetch-source.ts         # ソース種別によるフェッチャー呼び分け
-│   │   │   ├── sync-sources.ts         # DB source テーブルとの upsert 同期
-│   │   │   ├── deduplicate-events.ts   # externalId / content_hash による重複排除
-│   │   │   └── save-events.ts          # raw_event への一括保存
+│   │   ├── gemini.ts               # Gemini API クライアント（シングルトン）+ モデル定数
+│   │   ├── gemini.test.ts
+│   │   ├── sources.ts              # syncSources / deduplicateEvents / saveEvents
+│   │   ├── scoring.ts              # 重要度スコアリング（0-100）
+│   │   ├── scoring.test.ts
+│   │   ├── retry.ts                # 指数バックオフリトライ
+│   │   ├── retry.test.ts
+│   │   ├── slack.ts                # Slack通知（緊急アラート / コストアラート）
+│   │   ├── slack.test.ts
+│   │   ├── processors/
+│   │   │   ├── classify.ts         # Gemini Flash Lite による分類（バッチ対応）
+│   │   │   ├── classify.test.ts
+│   │   │   ├── summarize.ts        # Gemini Flash による要約（バッチ対応・フォールバック）
+│   │   │   └── summarize.test.ts
 │   │   ├── fetchers/
-│   │   │   ├── types.ts            # SourceConfig の再エクスポート（後方互換）
+│   │   │   ├── index.ts            # fetchSource ルータ（ソース種別で振り分け）
+│   │   │   ├── types.ts            # SourceConfig の再エクスポート
 │   │   │   ├── github.ts           # GitHub Releases API フェッチャー
 │   │   │   ├── github.test.ts
 │   │   │   ├── rss.ts              # RSS/Atom フィードフェッチャー
@@ -697,7 +702,7 @@ shinbun/
 ```
 
 > `backend/config/*.yaml` はリポジトリにコミットして管理する。設定変更はファイル編集 → `main` へのプッシュで反映される。
-> バッチスクリプトはローカルでは `npm run fetch`（`tsx --env-file=.env backend/scripts/fetch.ts`）で実行する。GitHub Actions 実装後は `npx tsx backend/scripts/fetch.ts` で実行予定。
+> バッチスクリプトはローカルでは `npm run fetch` / `npm run fetch-hn` で実行する。GitHub Actions では `npx tsx backend/scripts/fetch-hn.ts` で実行。
 > `backend/lib/` 配下のモジュールは `backend/scripts/` から参照される。フロントエンド（`mock/`）は現在モックデータを使用しており、DB未接続。
 
 ### 6.5 Supabase 構成
@@ -731,6 +736,7 @@ shinbun/
     "db:push": "prisma db push --schema backend/migration/schema.prisma",
     "db:seed": "prisma db seed",
     "fetch": "tsx --env-file=.env backend/scripts/fetch.ts",
+    "fetch-hn": "tsx --env-file=.env backend/scripts/fetch-hn.ts",
     "test": "vitest run"
   }
 }
@@ -758,7 +764,7 @@ APIキー等の機密情報は必ず **GitHub Secrets** で管理し、コード
 
 #### 前提
 
-LLM API 呼び出しは **Claude Code Pro プランの利用枠を使用**するため、Anthropic API の従量課金は発生しない。
+LLM API 呼び出しは **Google Gemini API の無料枠**（30 RPM）を使用するため、通常運用ではコスト $0。
 
 #### フェーズ別コスト見通し
 
@@ -767,24 +773,22 @@ LLM API 呼び出しは **Claude Code Pro プランの利用枠を使用**する
 | Vercel | Hobby（Web UI配信のみ） | $0 | $0 |
 | GitHub Actions | パブリックリポジトリ（無制限） | $0 | $0 |
 | Supabase | Free（500MB） | $0 | $0〜$25 ※1 |
-| Anthropic API | Claude Code Pro 枠を利用 | **$0** | **$0** ※2 |
+| Gemini API | 無料枠（30 RPM） | **$0** | **$0** ※2 |
 | Sentry | Free | $0 | $0 |
 | **追加インフラ合計** | | **$0/月** | **$0〜$25/月** |
 
 ※1 item テーブルが1年以上蓄積し 1GB を超えた場合、Supabase Pro（$25/月）へ移行
-※2 利用量が Pro プランの枠を超過した場合は従量課金が発生する可能性あり（下記参照）
+※2 無料枠を超過した場合は従量課金が発生する（Flash Lite: $0.075/MTok入力、Flash: $0.15/MTok入力）
 
-#### API 利用量の目安（プラン枠の超過監視）
+#### API 利用量の目安
 
-Claude Code Pro プランの枠内に収まっているか確認するため、`item.llm_cost` に処理コストを記録し続ける。
+| ステージ | モデル | 処理件数/日 | コスト |
+|---|---|---|---|
+| Stage 2 分類 | Gemini 2.5 Flash Lite | ~400件 | $0（無料枠） |
+| Stage 3 要約 | Gemini 2.5 Flash | ~100件（上位のみ） | $0（無料枠） |
+| **合計** | | | **$0/日** |
 
-| ステージ | モデル | 処理件数/日 | 想定コスト換算/日 | 月間換算 |
-|---|---|---|---|---|
-| Stage 2 分類 | Claude Haiku 4.5 | ~400件 | ~$0.40 | ~$12 |
-| Stage 3 要約 | Claude Sonnet 4.6 | ~100件（上位のみ） | ~$1.00 | ~$30 |
-| **合計** | | | **~$1.40/日** | **~$42/月相当** |
-
-> 枠超過のリスク管理: 日次コストが閾値（$5）を超えた場合に Slack アラートを送信する仕組みは引き続き有効にしておく。枠を超過し従量課金に切り替わった場合の早期検知に使用する。
+> 日次コストが閾値（$5）を超えた場合に Slack アラートを送信する仕組みは引き続き有効。無料枠超過の早期検知に使用する。
 
 ---
 
@@ -804,8 +808,8 @@ Claude Code Pro プランの枠内に収まっているか確認するため、`
 
 | 障害 | フォールバック |
 |---|---|
-| Sonnet 障害 | Haiku で要約（品質低下を許容し配信継続） |
-| Haiku 障害 | ルールベース分類のみ（要約なしで配信） |
+| Flash 障害 | Flash Lite で要約（品質低下を許容し配信継続） |
+| Flash Lite 障害 | ルールベース分類のみ（要約なしで配信） |
 | レートリミット | キューイングで処理を平準化（Cron間隔内に収める） |
 
 ### 7.2 監視項目
