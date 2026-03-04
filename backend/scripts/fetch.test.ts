@@ -1,57 +1,72 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ISourceRepository } from "../lib/repositories/source-repository.js";
-import type { IRawEventRepository } from "../lib/repositories/raw-event-repository.js";
-import { syncSources } from "../lib/usecases/sync-sources.js";
-import { deduplicateEvents } from "../lib/usecases/deduplicate-events.js";
-import { saveEvents } from "../lib/usecases/save-events.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockSourceData = {
-  id: "new-id",
-  type: "rss" as const,
-  name: "Test RSS",
-  config: { url: "https://example.com/feed" },
-  pollingInterval: 1800,
-  enabled: true,
-  lastFetchedAt: null,
-  errorCount: 0,
-  lastError: null,
-  createdAt: new Date(),
+vi.mock("../lib/db/client.js", () => ({
+  prisma: {
+    source: {
+      findFirst: vi.fn(),
+      upsert: vi.fn(),
+      update: vi.fn(),
+    },
+    rawEvent: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+      createMany: vi.fn(),
+    },
+    $disconnect: vi.fn(),
+  },
+}));
+
+import { prisma } from "../lib/db/client.js";
+import { deduplicateEvents, saveEvents, syncSources } from "./fetch.js";
+
+const mockSource = prisma.source as unknown as {
+  findFirst: ReturnType<typeof vi.fn>;
+  upsert: ReturnType<typeof vi.fn>;
 };
 
-function makeSourceRepo(overrides: Partial<ISourceRepository> = {}): ISourceRepository {
-  return {
-    upsert: vi.fn().mockResolvedValue(mockSourceData),
-    updateLastFetched: vi.fn().mockResolvedValue(undefined),
-    incrementErrorCount: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
-}
-
-function makeRawEventRepo(overrides: Partial<IRawEventRepository> = {}): IRawEventRepository {
-  return {
-    findExternalIds: vi.fn().mockResolvedValue([]),
-    findContentHashes: vi.fn().mockResolvedValue([]),
-    createMany: vi.fn().mockResolvedValue(0),
-    ...overrides,
-  };
-}
+const mockRawEvent = prisma.rawEvent as unknown as {
+  findMany: ReturnType<typeof vi.fn>;
+  create: ReturnType<typeof vi.fn>;
+  createMany: ReturnType<typeof vi.fn>;
+};
 
 describe("syncSources", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("@@unique([type, name]) を使った upsert でソースを同期する", async () => {
-    const repo = makeSourceRepo();
+    const sourceData = {
+      id: "new-id",
+      type: "rss",
+      name: "Test RSS",
+      config: { url: "https://example.com/feed" },
+      pollingInterval: 1800,
+      enabled: true,
+      lastFetchedAt: null,
+      errorCount: 0,
+      lastError: null,
+      createdAt: new Date(),
+    };
+    mockSource.upsert.mockResolvedValue(sourceData);
+
     const config = {
       type: "rss" as const,
       name: "Test RSS",
       config: { url: "https://example.com/feed" },
       polling_interval: 1800,
     };
-
-    const result = await syncSources(repo, [config]);
+    const result = await syncSources([config]);
 
     expect(result).toHaveLength(1);
     expect(result[0].source.id).toBe("new-id");
     expect(result[0].config).toBe(config);
-    expect(repo.upsert).toHaveBeenCalledWith(config);
+    expect(mockSource.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { type_name: { type: "rss", name: "Test RSS" } },
+        create: expect.objectContaining({ name: "Test RSS" }),
+      }),
+    );
   });
 });
 
@@ -61,9 +76,9 @@ describe("deduplicateEvents", () => {
   });
 
   it("既存 externalId を持つイベントを除外する", async () => {
-    const repo = makeRawEventRepo({
-      findExternalIds: vi.fn().mockResolvedValue(["existing-1"]),
-    });
+    mockRawEvent.findMany
+      .mockResolvedValueOnce([{ externalId: "existing-1" }])
+      .mockResolvedValueOnce([]);
 
     const events = [
       {
@@ -82,7 +97,7 @@ describe("deduplicateEvents", () => {
       },
     ];
 
-    const result = await deduplicateEvents(repo, "source-1", events);
+    const result = await deduplicateEvents("source-1", events);
     expect(result).toHaveLength(1);
     expect(result[0].externalId).toBe("new-1");
   });
@@ -91,9 +106,9 @@ describe("deduplicateEvents", () => {
     const { contentHash } = await import("../lib/url.js");
     const existingHash = contentHash({ key: "val1" });
 
-    const repo = makeRawEventRepo({
-      findContentHashes: vi.fn().mockResolvedValue([existingHash]),
-    });
+    mockRawEvent.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ contentHash: existingHash }]);
 
     const events = [
       {
@@ -112,18 +127,15 @@ describe("deduplicateEvents", () => {
       },
     ];
 
-    const result = await deduplicateEvents(repo, "source-1", events);
+    const result = await deduplicateEvents("source-1", events);
     expect(result).toHaveLength(1);
     expect(result[0].externalId).toBe("id-2");
   });
 
   it("空配列には空配列を返す", async () => {
-    const repo = makeRawEventRepo();
-
-    const result = await deduplicateEvents(repo, "source-1", []);
+    const result = await deduplicateEvents("source-1", []);
     expect(result).toEqual([]);
-    expect(repo.findExternalIds).not.toHaveBeenCalled();
-    expect(repo.findContentHashes).not.toHaveBeenCalled();
+    expect(mockRawEvent.findMany).not.toHaveBeenCalled();
   });
 });
 
@@ -132,7 +144,9 @@ describe("saveEvents", () => {
     vi.clearAllMocks();
   });
 
-  it("リポジトリの createMany に委譲する", async () => {
+  it("createMany + skipDuplicates で一括保存する", async () => {
+    mockRawEvent.createMany.mockResolvedValue({ count: 2 });
+
     const events = [
       {
         externalId: "id-1",
@@ -149,18 +163,24 @@ describe("saveEvents", () => {
         payload: { key: "val2" },
       },
     ];
-    const repo = makeRawEventRepo({ createMany: vi.fn().mockResolvedValue(2) });
 
-    const saved = await saveEvents(repo, "source-1", events);
+    const saved = await saveEvents("source-1", events);
     expect(saved).toBe(2);
-    expect(repo.createMany).toHaveBeenCalledWith("source-1", events);
+    expect(mockRawEvent.createMany).toHaveBeenCalledTimes(1);
+    expect(mockRawEvent.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skipDuplicates: true,
+        data: expect.arrayContaining([
+          expect.objectContaining({ sourceId: "source-1", externalId: "id-1" }),
+          expect.objectContaining({ sourceId: "source-1", externalId: "id-2" }),
+        ]),
+      }),
+    );
   });
 
-  it("空配列には0を返す", async () => {
-    const repo = makeRawEventRepo({ createMany: vi.fn().mockResolvedValue(0) });
-
-    const saved = await saveEvents(repo, "source-1", []);
+  it("空配列には0を返しDBアクセスしない", async () => {
+    const saved = await saveEvents("source-1", []);
     expect(saved).toBe(0);
-    expect(repo.createMany).toHaveBeenCalledWith("source-1", []);
+    expect(mockRawEvent.createMany).not.toHaveBeenCalled();
   });
 });

@@ -45,9 +45,7 @@ Return JSON with these fields:
 /**
  * 単一記事を分類
  */
-export async function classifyItem(
-  input: ClassifyInput,
-): Promise<ClassificationResult> {
+export async function classifyItem(input: ClassifyInput): Promise<ClassificationResult> {
   const response = await withRetry(
     () =>
       gemini.models.generateContent({
@@ -90,9 +88,7 @@ export async function classifyBatch(
 
   for (let i = 0; i < items.length; i += concurrency) {
     const chunk = items.slice(i, i + concurrency);
-    const chunkResults = await Promise.allSettled(
-      chunk.map((item) => classifyItem(item)),
-    );
+    const chunkResults = await Promise.allSettled(chunk.map((item) => classifyItem(item)));
 
     for (const result of chunkResults) {
       if (result.status === "fulfilled") {

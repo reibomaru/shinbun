@@ -1,7 +1,7 @@
 import { fetchGitHubReleases } from "./github.js";
-import { fetchRSS } from "./rss.js";
 import { fetchHackerNews } from "./hackernews.js";
-import type { SourceConfig, FetchResult } from "./types.js";
+import { fetchRSS } from "./rss.js";
+import type { FetchResult, SourceConfig } from "./types.js";
 
 /**
  * ソース設定に応じてフェッチャーを呼び分ける
@@ -13,10 +13,7 @@ export async function fetchSource(
   const cfg = sourceConfig.config;
   switch (sourceConfig.type) {
     case "github_repo":
-      return fetchGitHubReleases(
-        cfg as { owner: string; repo: string },
-        lastFetchedAt,
-      );
+      return fetchGitHubReleases(cfg as { owner: string; repo: string }, lastFetchedAt);
     case "rss":
       return fetchRSS(cfg as { url: string }, lastFetchedAt);
     case "hackernews":

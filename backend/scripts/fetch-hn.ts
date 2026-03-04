@@ -1,5 +1,5 @@
-import { prisma } from "../lib/db/client.js";
 import { loadSources } from "../lib/config.js";
+import { prisma } from "../lib/db/client.js";
 import { fetchSource } from "../lib/fetchers/index.js";
 import { syncSources, deduplicateEvents, saveEvents } from "../lib/sources.js";
 import { classifyEvents } from "../lib/usecases/classify-events.js";
@@ -83,7 +83,9 @@ async function main() {
   // Stage 2: Classify
   console.log("\n--- Stage 2: Classify (Gemini Flash Lite) ---");
   const { classified, relevant, totalCost: classifyCost } = await stage2Classify();
-  console.log(`  Classified ${classified}, relevant: ${relevant}, cost: $${classifyCost.toFixed(4)}`);
+  console.log(
+    `  Classified ${classified}, relevant: ${relevant}, cost: $${classifyCost.toFixed(4)}`,
+  );
 
   // Stage 3: Summarize
   console.log("\n--- Stage 3: Summarize (Gemini Flash) ---");
@@ -95,12 +97,13 @@ async function main() {
   await checkCostAlert(totalCost);
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`\n=== fetch-hn completed in ${elapsed}s (total LLM cost: $${totalCost.toFixed(4)}) ===`);
+  console.log(
+    `\n=== fetch-hn completed in ${elapsed}s (total LLM cost: $${totalCost.toFixed(4)}) ===`,
+  );
 }
 
 const isDirectRun =
-  process.argv[1] &&
-  import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+  process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
 
 if (isDirectRun) {
   main()

@@ -36,9 +36,7 @@ Summarize the given article in Japanese.
 Respond with ONLY a JSON object (no markdown, no explanation).`;
 
 function buildSummarizeUserPrompt(input: SummarizeInput): string {
-  const payloadText = input.payload._text
-    ? String(input.payload._text).slice(0, 2000)
-    : "";
+  const payloadText = input.payload._text ? String(input.payload._text).slice(0, 2000) : "";
 
   return `Summarize this ${input.topic} article in Japanese:
 Title: ${input.title}
@@ -130,10 +128,7 @@ export function sanitizeLlmJson(raw: string): string {
   throw new Error("Failed to repair truncated JSON from LLM response");
 }
 
-async function callSummarize(
-  input: SummarizeInput,
-  model: string,
-): Promise<SummaryResult> {
+async function callSummarize(input: SummarizeInput, model: string): Promise<SummaryResult> {
   const response = await withRetry(
     () =>
       gemini.models.generateContent({
@@ -176,9 +171,7 @@ export async function summarizeBatch(
 
   for (let i = 0; i < items.length; i += concurrency) {
     const chunk = items.slice(i, i + concurrency);
-    const chunkResults = await Promise.allSettled(
-      chunk.map((item) => summarizeItem(item)),
-    );
+    const chunkResults = await Promise.allSettled(chunk.map((item) => summarizeItem(item)));
 
     for (const result of chunkResults) {
       if (result.status === "fulfilled") {

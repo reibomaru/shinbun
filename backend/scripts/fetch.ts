@@ -1,4 +1,4 @@
-import { prisma } from "../lib/db/client.js";
+import type { Source } from "@prisma/client";
 import { loadSources } from "../lib/config.js";
 import { sourceRepository, rawEventRepository } from "../lib/container.js";
 import { fetchSource } from "../lib/fetchers/index.js";
@@ -34,7 +34,14 @@ async function main() {
 
       if (!result.ok) {
         console.error(`  ✗ ${label}: ${result.error}`);
-        await sourceRepository.incrementErrorCount(source.id, result.error);
+        // エラー時: error_count インクリメント
+        await prisma.source.update({
+          where: { id: source.id },
+          data: {
+            errorCount: { increment: 1 },
+            lastError: result.error,
+          },
+        });
         return { source: label, fetched: 0, saved: 0 };
       }
 
@@ -55,11 +62,7 @@ async function main() {
 
       await sourceRepository.updateLastFetched(source.id);
 
-      return {
-        source: label,
-        fetched: result.events.length,
-        saved: savedCount,
-      };
+      return { source: label, fetched: result.events.length, saved: savedCount };
     }),
   );
 
@@ -95,8 +98,7 @@ async function main() {
 }
 
 const isDirectRun =
-  process.argv[1] &&
-  import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
+  process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
 
 if (isDirectRun) {
   main()

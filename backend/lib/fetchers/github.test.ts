@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fetchGitHubReleases } from "./github.js";
 
 const config = { owner: "test-owner", repo: "test-repo" };
@@ -42,9 +42,7 @@ describe("fetchGitHubReleases", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.events).toHaveLength(1);
-      expect(result.events[0].externalId).toBe(
-        "github-release-test-owner-test-repo-1",
-      );
+      expect(result.events[0].externalId).toBe("github-release-test-owner-test-repo-1");
       expect(result.events[0].title).toBe("Release 1.0.0");
     }
   });
@@ -54,8 +52,7 @@ describe("fetchGitHubReleases", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: () =>
-          Promise.resolve([makeRelease(), makeRelease({ id: 2, draft: true })]),
+        json: () => Promise.resolve([makeRelease(), makeRelease({ id: 2, draft: true })]),
       }),
     );
 
@@ -85,10 +82,7 @@ describe("fetchGitHubReleases", () => {
       }),
     );
 
-    const result = await fetchGitHubReleases(
-      config,
-      new Date("2025-01-15T00:00:00Z"),
-    );
+    const result = await fetchGitHubReleases(config, new Date("2025-01-15T00:00:00Z"));
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.events).toHaveLength(1);
@@ -101,11 +95,7 @@ describe("fetchGitHubReleases", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: () =>
-          Promise.resolve([
-            makeRelease({ id: 1 }),
-            makeRelease({ id: 2 }),
-          ]),
+        json: () => Promise.resolve([makeRelease({ id: 1 }), makeRelease({ id: 2 })]),
       }),
     );
 

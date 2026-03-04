@@ -1,35 +1,25 @@
-import { describe, it, expect } from "vitest";
-import { normalizeUrl, contentHash } from "./url.js";
+import { describe, expect, it } from "vitest";
+import { contentHash, normalizeUrl } from "./url.js";
 
 describe("normalizeUrl", () => {
   it("www を除去する", () => {
-    expect(normalizeUrl("https://www.example.com/page")).toBe(
-      "https://example.com/page",
-    );
+    expect(normalizeUrl("https://www.example.com/page")).toBe("https://example.com/page");
   });
 
   it("クエリパラメータを除去する", () => {
-    expect(normalizeUrl("https://example.com/page?foo=bar&baz=1")).toBe(
-      "https://example.com/page",
-    );
+    expect(normalizeUrl("https://example.com/page?foo=bar&baz=1")).toBe("https://example.com/page");
   });
 
   it("フラグメントを除去する", () => {
-    expect(normalizeUrl("https://example.com/page#section")).toBe(
-      "https://example.com/page",
-    );
+    expect(normalizeUrl("https://example.com/page#section")).toBe("https://example.com/page");
   });
 
   it("末尾スラッシュを除去する", () => {
-    expect(normalizeUrl("https://example.com/page/")).toBe(
-      "https://example.com/page",
-    );
+    expect(normalizeUrl("https://example.com/page/")).toBe("https://example.com/page");
   });
 
   it("ルートパスの末尾スラッシュは残す", () => {
-    expect(normalizeUrl("https://example.com/")).toBe(
-      "https://example.com/",
-    );
+    expect(normalizeUrl("https://example.com/")).toBe("https://example.com/");
   });
 
   it("無効な URL はそのまま返す", () => {
@@ -37,9 +27,7 @@ describe("normalizeUrl", () => {
   });
 
   it("複数の正規化を同時に適用する", () => {
-    expect(
-      normalizeUrl("https://www.example.com/page/?q=1#top"),
-    ).toBe("https://example.com/page");
+    expect(normalizeUrl("https://www.example.com/page/?q=1#top")).toBe("https://example.com/page");
   });
 });
 

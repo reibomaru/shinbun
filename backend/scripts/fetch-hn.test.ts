@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // --- Mocks ---
 
@@ -75,11 +75,11 @@ vi.mock("../lib/sources.js", () => ({
 }));
 
 import { prisma } from "../lib/db/client.js";
+import { fetchSource } from "../lib/fetchers/index.js";
 import { classifyBatch } from "../lib/processors/classify.js";
 import { summarizeItem } from "../lib/processors/summarize.js";
-import { sendUrgentAlert, sendCostAlert } from "../lib/slack.js";
-import { fetchSource } from "../lib/fetchers/index.js";
-import { syncSources, deduplicateEvents, saveEvents } from "../lib/sources.js";
+import { sendCostAlert, sendUrgentAlert } from "../lib/slack.js";
+import { deduplicateEvents, saveEvents, syncSources } from "../lib/sources.js";
 import { stage1Fetch, stage2Classify, stage3Summarize } from "./fetch-hn.js";
 
 const mockSyncSources = syncSources as ReturnType<typeof vi.fn>;
@@ -122,14 +122,36 @@ describe("stage1Fetch", () => {
       lastFetchedAt: null,
     };
     mockSyncSources.mockResolvedValue([
-      { source, config: { type: "hackernews", name: "HN Top Stories", config: { mode: "top", min_score: 50 }, polling_interval: 1800 } },
+      {
+        source,
+        config: {
+          type: "hackernews",
+          name: "HN Top Stories",
+          config: { mode: "top", min_score: 50 },
+          polling_interval: 1800,
+        },
+      },
     ]);
     mockFetchSource.mockResolvedValue({
       ok: true,
-      events: [{ externalId: "hn-1", url: "https://example.com", title: "Test", publishedAt: null, payload: {} }],
+      events: [
+        {
+          externalId: "hn-1",
+          url: "https://example.com",
+          title: "Test",
+          publishedAt: null,
+          payload: {},
+        },
+      ],
     });
     mockDedup.mockResolvedValue([
-      { externalId: "hn-1", url: "https://example.com", title: "Test", publishedAt: null, payload: {} },
+      {
+        externalId: "hn-1",
+        url: "https://example.com",
+        title: "Test",
+        publishedAt: null,
+        payload: {},
+      },
     ]);
     mockSaveEvents.mockResolvedValue(1);
 
@@ -152,7 +174,13 @@ describe("stage2Classify", () => {
       {
         id: "re-1",
         sourceId: "src-1",
-        payload: { _title: "AI News", _url: "https://example.com/ai", score: 200, descendants: 50, _publishedAt: "2025-06-01T00:00:00Z" },
+        payload: {
+          _title: "AI News",
+          _url: "https://example.com/ai",
+          score: 200,
+          descendants: 50,
+          _publishedAt: "2025-06-01T00:00:00Z",
+        },
         source: { type: "hackernews" },
       },
     ]);
@@ -228,7 +256,13 @@ describe("stage2Classify", () => {
       {
         id: "re-1",
         sourceId: "src-1",
-        payload: { _title: "Critical CVE", _url: "https://example.com/cve", score: 500, descendants: 100, _publishedAt: "2025-06-01T00:00:00Z" },
+        payload: {
+          _title: "Critical CVE",
+          _url: "https://example.com/cve",
+          score: 500,
+          descendants: 100,
+          _publishedAt: "2025-06-01T00:00:00Z",
+        },
         source: { type: "hackernews" },
       },
     ]);
@@ -309,9 +343,7 @@ describe("stage3Summarize", () => {
       summaryMedium: "詳細な要約テキスト",
       keyPoints: ["ポイント1", "ポイント2", "ポイント3"],
       whyItMatters: "重要な理由",
-      entities: [
-        { name: "Claude", type: "model", role: "AIモデル", confidence: 0.95 },
-      ],
+      entities: [{ name: "Claude", type: "model", role: "AIモデル", confidence: 0.95 }],
       llmCost: 0.005,
       modelUsed: "gemini-2.5-flash",
     });
