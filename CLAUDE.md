@@ -18,6 +18,17 @@ AI Tech Daily Aggregator（Shinbun 新聞）— AI・Web開発領域の情報を
 
 ```
 shinbun/
+├── backend/        # バッチ処理・バックエンドロジック
+│   ├── lib/        # コアライブラリ（レイヤードアーキテクチャ）
+│   │   ├── models/         # ドメインモデル・型定義（RawEventInput, FetchResult 等）
+│   │   ├── repositories/   # リポジトリインターフェース（ISourceRepository, IRawEventRepository）
+│   │   │   └── prisma/     # Prisma によるリポジトリ実装
+│   │   ├── usecases/       # ビジネスロジック（fetchSource, syncSources, deduplicateEvents, saveEvents）
+│   │   ├── fetchers/       # 外部ソースからのデータ取得
+│   │   ├── container.ts    # DI コンテナ（リポジトリのシングルトン管理・実装切り替えの唯一の変更点）
+│   │   ├── config.ts       # 設定
+│   │   └── db/             # Prisma クライアント
+│   └── scripts/    # エントリーポイント（薄いオーケストレーター）
 ├── mock/           # Next.js Web UI（フロントエンド）
 │   ├── app/        # App Router ページ
 │   ├── components/ # React コンポーネント
@@ -29,6 +40,24 @@ shinbun/
 │   └── screenshots/                                  # UI モックアップのスクリーンショット
 └── .claude/        # Claude Code 設定
 ```
+
+## バックエンドアーキテクチャ
+
+`backend/lib/` は **models / repositories / usecases** の3層レイヤードアーキテクチャ + DI コンテナで構成される。
+
+| レイヤー | 役割 | 例 |
+|---|---|---|
+| **models** | ドメインモデル・型定義（最下層・依存なし） | `RawEventInput`, `FetchResult` |
+| **repositories** | データアクセスのインターフェースと実装（models に依存） | `ISourceRepository`, `PrismaSourceRepository` |
+| **usecases** | ビジネスロジック（repositories・models に依存） | `fetchSource`, `syncSources`, `deduplicateEvents`, `saveEvents` |
+| **container.ts** | DI ワイヤリング（実装の切り替えはここだけ） | `sourceRepository`, `rawEventRepository` |
+| **scripts/** | エントリーポイント（container から取得した依存を usecases に渡す薄いオーケストレーター） | `fetch.ts` |
+
+### 設計方針
+
+- **依存の方向:** scripts → usecases → repositories（インターフェース） → models。実装クラス（`prisma/`）はインターフェースに依存。
+- **DI:** `container.ts` がリポジトリ実装のシングルトンを管理。実装の差し替え（例: Prisma → mock）は `container.ts` のみ変更。
+- **テスト:** リポジトリインターフェースのモックを直接注入する方式。`vi.mock` は使わない。
 
 ## 開発における注意事項
 
