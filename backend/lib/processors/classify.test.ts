@@ -5,22 +5,22 @@ vi.mock("../retry.js", () => ({
   withRetry: vi.fn().mockImplementation((fn: () => Promise<unknown>) => fn()),
 }));
 
-vi.mock("../anthropic.js", () => ({
-  anthropic: {
-    messages: {
-      create: vi.fn(),
+vi.mock("../gemini.js", () => ({
+  gemini: {
+    models: {
+      generateContent: vi.fn(),
     },
   },
   MODELS: {
-    HAIKU: "claude-haiku-4-5-20250315",
-    SONNET: "claude-sonnet-4-6-20250514",
+    FLASH_LITE: "gemini-2.5-flash-lite",
+    FLASH: "gemini-2.5-flash",
   },
 }));
 
-import { anthropic } from "../anthropic.js";
+import { gemini } from "../gemini.js";
 import { classifyItem, classifyBatch } from "./classify.js";
 
-const mockCreate = anthropic.messages.create as ReturnType<typeof vi.fn>;
+const mockGenerateContent = gemini.models.generateContent as ReturnType<typeof vi.fn>;
 
 function makeClassifyResponse(overrides = {}) {
   return {
@@ -40,9 +40,8 @@ describe("classifyItem", () => {
 
   it("正常な分類結果を返す", async () => {
     const responseData = makeClassifyResponse();
-    mockCreate.mockResolvedValue({
-      content: [{ type: "text", text: JSON.stringify(responseData) }],
-      usage: { input_tokens: 100, output_tokens: 50 },
+    mockGenerateContent.mockResolvedValue({
+      text: JSON.stringify(responseData),
     });
 
     const result = await classifyItem({
@@ -55,14 +54,13 @@ describe("classifyItem", () => {
     expect(result.isRelevant).toBe(true);
     expect(result.topic).toBe("genai");
     expect(result.format).toBe("announcement");
-    expect(result.llmCost).toBeGreaterThan(0);
-    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(result.llmCost).toBe(0);
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
   });
 
   it("不正な JSON の場合はエラーを throw する", async () => {
-    mockCreate.mockResolvedValue({
-      content: [{ type: "text", text: "not json" }],
-      usage: { input_tokens: 100, output_tokens: 50 },
+    mockGenerateContent.mockResolvedValue({
+      text: "not json",
     });
 
     await expect(
@@ -82,11 +80,8 @@ describe("classifyBatch", () => {
   });
 
   it("複数アイテムをバッチ処理する", async () => {
-    mockCreate.mockResolvedValue({
-      content: [
-        { type: "text", text: JSON.stringify(makeClassifyResponse()) },
-      ],
-      usage: { input_tokens: 100, output_tokens: 50 },
+    mockGenerateContent.mockResolvedValue({
+      text: JSON.stringify(makeClassifyResponse()),
     });
 
     const items = Array.from({ length: 3 }, (_, i) => ({
@@ -100,14 +95,13 @@ describe("classifyBatch", () => {
 
     expect(results).toHaveLength(3);
     expect(results.every((r) => !("error" in r))).toBe(true);
-    expect(mockCreate).toHaveBeenCalledTimes(3);
+    expect(mockGenerateContent).toHaveBeenCalledTimes(3);
   });
 
   it("一部失敗時もエラーオブジェクトを返す", async () => {
-    mockCreate
+    mockGenerateContent
       .mockResolvedValueOnce({
-        content: [{ type: "text", text: JSON.stringify(makeClassifyResponse()) }],
-        usage: { input_tokens: 100, output_tokens: 50 },
+        text: JSON.stringify(makeClassifyResponse()),
       })
       .mockRejectedValueOnce(new Error("API error"));
 

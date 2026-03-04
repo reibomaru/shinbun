@@ -5,22 +5,22 @@ vi.mock("../retry.js", () => ({
   withRetry: vi.fn().mockImplementation((fn: () => Promise<unknown>) => fn()),
 }));
 
-vi.mock("../anthropic.js", () => ({
-  anthropic: {
-    messages: {
-      create: vi.fn(),
+vi.mock("../gemini.js", () => ({
+  gemini: {
+    models: {
+      generateContent: vi.fn(),
     },
   },
   MODELS: {
-    HAIKU: "claude-haiku-4-5-20250315",
-    SONNET: "claude-sonnet-4-6-20250514",
+    FLASH_LITE: "gemini-2.5-flash-lite",
+    FLASH: "gemini-2.5-flash",
   },
 }));
 
-import { anthropic, MODELS } from "../anthropic.js";
+import { gemini, MODELS } from "../gemini.js";
 import { summarizeItem, summarizeBatch } from "./summarize.js";
 
-const mockCreate = anthropic.messages.create as ReturnType<typeof vi.fn>;
+const mockGenerateContent = gemini.models.generateContent as ReturnType<typeof vi.fn>;
 
 function makeSummaryResponse(overrides = {}) {
   return {
@@ -46,10 +46,9 @@ describe("summarizeItem", () => {
     vi.clearAllMocks();
   });
 
-  it("Sonnet で正常に要約する", async () => {
-    mockCreate.mockResolvedValue({
-      content: [{ type: "text", text: JSON.stringify(makeSummaryResponse()) }],
-      usage: { input_tokens: 500, output_tokens: 300 },
+  it("Flash で正常に要約する", async () => {
+    mockGenerateContent.mockResolvedValue({
+      text: JSON.stringify(makeSummaryResponse()),
     });
 
     const result = await summarizeItem({
@@ -62,23 +61,20 @@ describe("summarizeItem", () => {
     expect(result.summaryShort).toContain("Claude 4");
     expect(result.keyPoints).toHaveLength(3);
     expect(result.entities).toHaveLength(1);
-    expect(result.modelUsed).toBe(MODELS.SONNET);
-    expect(result.llmCost).toBeGreaterThan(0);
-    // Sonnet で1回だけ呼ばれる
-    expect(mockCreate).toHaveBeenCalledTimes(1);
-    expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ model: MODELS.SONNET }),
+    expect(result.modelUsed).toBe(MODELS.FLASH);
+    expect(result.llmCost).toBe(0);
+    // Flash で1回だけ呼ばれる
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+    expect(mockGenerateContent).toHaveBeenCalledWith(
+      expect.objectContaining({ model: MODELS.FLASH }),
     );
   });
 
-  it("Sonnet 失敗時に Haiku にフォールバックする", async () => {
-    mockCreate
-      .mockRejectedValueOnce(new Error("Sonnet overloaded"))
+  it("Flash 失敗時に Flash Lite にフォールバックする", async () => {
+    mockGenerateContent
+      .mockRejectedValueOnce(new Error("Flash overloaded"))
       .mockResolvedValue({
-        content: [
-          { type: "text", text: JSON.stringify(makeSummaryResponse()) },
-        ],
-        usage: { input_tokens: 500, output_tokens: 300 },
+        text: JSON.stringify(makeSummaryResponse()),
       });
 
     const result = await summarizeItem({
@@ -88,9 +84,9 @@ describe("summarizeItem", () => {
       payload: {},
     });
 
-    expect(result.modelUsed).toBe(MODELS.HAIKU);
-    // withRetry モック済み: Sonnet 1回失敗 + Haiku 1回成功 = 2回
-    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect(result.modelUsed).toBe(MODELS.FLASH_LITE);
+    // withRetry モック済み: Flash 1回失敗 + Flash Lite 1回成功 = 2回
+    expect(mockGenerateContent).toHaveBeenCalledTimes(2);
   });
 
   it("エンティティ抽出結果を正しくパースする", async () => {
@@ -101,9 +97,8 @@ describe("summarizeItem", () => {
       ],
     });
 
-    mockCreate.mockResolvedValue({
-      content: [{ type: "text", text: JSON.stringify(response) }],
-      usage: { input_tokens: 500, output_tokens: 300 },
+    mockGenerateContent.mockResolvedValue({
+      text: JSON.stringify(response),
     });
 
     const result = await summarizeItem({
@@ -125,9 +120,8 @@ describe("summarizeBatch", () => {
   });
 
   it("バッチ処理で複数アイテムを要約する", async () => {
-    mockCreate.mockResolvedValue({
-      content: [{ type: "text", text: JSON.stringify(makeSummaryResponse()) }],
-      usage: { input_tokens: 500, output_tokens: 300 },
+    mockGenerateContent.mockResolvedValue({
+      text: JSON.stringify(makeSummaryResponse()),
     });
 
     const items = Array.from({ length: 4 }, (_, i) => ({
@@ -144,14 +138,11 @@ describe("summarizeBatch", () => {
   });
 
   it("一部失敗時もエラーオブジェクトを返す", async () => {
-    mockCreate
+    mockGenerateContent
       .mockResolvedValueOnce({
-        content: [
-          { type: "text", text: JSON.stringify(makeSummaryResponse()) },
-        ],
-        usage: { input_tokens: 500, output_tokens: 300 },
+        text: JSON.stringify(makeSummaryResponse()),
       })
-      // 2つ目: Sonnet失敗 → Haiku も失敗
+      // 2つ目: Flash失敗 → Flash Lite も失敗
       .mockRejectedValue(new Error("All models failed"));
 
     const items = [

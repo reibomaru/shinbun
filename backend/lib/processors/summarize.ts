@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { anthropic, MODELS } from "../anthropic.js";
+import { gemini, MODELS } from "../gemini.js";
 import { withRetry } from "../retry.js";
 
 const EntitySchema = z.object({
   name: z.string(),
-  type: z.enum(["library", "model", "company", "repo"]),
+  type: z.string(),
   role: z.string(),
   confidence: z.number().min(0).max(1),
 });
@@ -31,17 +31,6 @@ export interface SummarizeInput {
   payload: Record<string, unknown>;
 }
 
-/** Sonnet の入出力トークンから USD コストを計算 */
-function calculateSonnetCost(inputTokens: number, outputTokens: number): number {
-  // Claude Sonnet 4.6: $3.00/MTok input, $15.00/MTok output
-  return (inputTokens * 3.0 + outputTokens * 15.0) / 1_000_000;
-}
-
-/** Haiku の入出力トークンから USD コストを計算 */
-function calculateHaikuCost(inputTokens: number, outputTokens: number): number {
-  return (inputTokens * 0.8 + outputTokens * 4.0) / 1_000_000;
-}
-
 const SUMMARIZE_SYSTEM_PROMPT = `You are a tech news summarizer for a Japanese audience.
 Summarize the given article in Japanese.
 Respond with ONLY a JSON object (no markdown, no explanation).`;
@@ -61,52 +50,50 @@ Return JSON with these fields:
 - summaryMedium (string): 3-5 sentence summary in Japanese
 - keyPoints (string[]): 3 bullet points in Japanese
 - whyItMatters (string): 1 sentence explaining why this matters, in Japanese
-- entities (array): Mentioned tech entities with { name, type ("library"|"model"|"company"|"repo"), role (brief description), confidence (0-1) }`;
+- entities (array): Mentioned tech entities with { name, type ("library"|"model"|"company"|"repo"|"other"), role (brief description), confidence (0-1) }`;
 }
 
 /**
- * 単一記事を要約（Sonnet → Haiku フォールバック）
+ * 単一記事を要約（Flash → Flash Lite フォールバック）
  */
 export async function summarizeItem(input: SummarizeInput): Promise<SummaryResult> {
-  // Sonnet で試行
+  // Flash で試行
   try {
-    return await callSummarize(input, MODELS.SONNET, calculateSonnetCost);
-  } catch (sonnetErr) {
+    return await callSummarize(input, MODELS.FLASH);
+  } catch (flashErr) {
     console.warn(
-      `[Summarize] Sonnet failed for "${input.title}", falling back to Haiku:`,
-      sonnetErr,
+      `[Summarize] Flash failed for "${input.title}", falling back to Flash Lite:`,
+      flashErr,
     );
   }
 
-  // Haiku にフォールバック
-  return await callSummarize(input, MODELS.HAIKU, calculateHaikuCost);
+  // Flash Lite にフォールバック
+  return await callSummarize(input, MODELS.FLASH_LITE);
 }
 
 async function callSummarize(
   input: SummarizeInput,
   model: string,
-  costFn: (input: number, output: number) => number,
 ): Promise<SummaryResult> {
   const response = await withRetry(
     () =>
-      anthropic.messages.create({
+      gemini.models.generateContent({
         model,
-        max_tokens: 1024,
-        system: SUMMARIZE_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: buildSummarizeUserPrompt(input) }],
+        contents: buildSummarizeUserPrompt(input),
+        config: {
+          systemInstruction: SUMMARIZE_SYSTEM_PROMPT,
+          responseMimeType: "application/json",
+          maxOutputTokens: 4096,
+        },
       }),
     { maxRetries: 3, baseDelayMs: 1000 },
   );
 
-  const text =
-    response.content[0].type === "text" ? response.content[0].text : "";
+  const text = response.text ?? "";
   const parsed = SummarySchema.parse(JSON.parse(text));
-  const llmCost = costFn(
-    response.usage.input_tokens,
-    response.usage.output_tokens,
-  );
 
-  return { ...parsed, llmCost, modelUsed: model };
+  // Gemini 無料枠なのでコスト 0
+  return { ...parsed, llmCost: 0, modelUsed: model };
 }
 
 /**
