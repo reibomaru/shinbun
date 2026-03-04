@@ -64,6 +64,8 @@
 | content_hash | TEXT | SHA-256（重複排除用） |
 | fetched_at | TIMESTAMP | 取得日時 |
 | processed | BOOLEAN | LLM処理済みフラグ |
+| retry_count | INTEGER | LLM処理リトライ回数（デフォルト: 0） |
+| last_error | TEXT | 最後に発生したエラーメッセージ（NULL可） |
 
 #### item
 処理済みの記事データ。無期限保持。
@@ -85,7 +87,7 @@
 | importance_score | FLOAT | 重要度スコア（0-100） |
 | importance_reason | TEXT | スコア算出理由 |
 | is_urgent | BOOLEAN | 緊急アラート対象か |
-| status | ENUM | `pending / processed / archived` |
+| status | ENUM | `pending / processed / archived / llm_error` |
 | llm_model_used | TEXT | 処理に使用したモデル名 |
 | llm_cost | FLOAT | 処理コスト（USD） |
 | created_at | TIMESTAMP | 作成日時 |
