@@ -25,6 +25,7 @@ enum ItemStatus {
   pending
   processed
   archived
+  llm_error
 }
 
 enum WatchlistTargetType {
@@ -65,6 +66,8 @@ model RawEvent {
   contentHash String   @map("content_hash")
   fetchedAt   DateTime @default(now()) @map("fetched_at")
   processed   Boolean  @default(false)
+  retryCount  Int      @default(0) @map("retry_count")
+  lastError   String?  @map("last_error")
 
   source Source @relation(fields: [sourceId], references: [id])
   items  Item[]
