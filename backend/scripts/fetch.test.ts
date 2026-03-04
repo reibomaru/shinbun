@@ -17,7 +17,7 @@ vi.mock("../lib/db/client.js", () => ({
 }));
 
 import { prisma } from "../lib/db/client.js";
-import { deduplicateEvents, saveEvents, syncSources } from "./fetch.js";
+import { deduplicateEvents, saveEvents, syncSources } from "../lib/sources.js";
 
 const mockSource = prisma.source as unknown as {
   findFirst: ReturnType<typeof vi.fn>;
