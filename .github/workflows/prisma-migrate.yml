@@ -1,0 +1,37 @@
+name: Prisma Migrate Deploy
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "本番データベースにマイグレーションを実行します。実行する場合はチェックを入れてください。"
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  migrate:
+    # PR マージ時、または手動実行で confirm が true の場合のみ実行
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.confirm == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run prisma migrate deploy
+        run: npx prisma migrate deploy --schema backend/migration/schema.prisma
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
