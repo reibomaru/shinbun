@@ -42,9 +42,10 @@ const FORMAT_LABELS: Record<string, string> = {
 interface ArticleCardProps {
   article: Article;
   compact?: boolean;
+  useAbsoluteTime?: boolean;
 }
 
-export function ArticleCard({ article, compact = false }: ArticleCardProps) {
+export function ArticleCard({ article, compact = false, useAbsoluteTime = false }: ArticleCardProps) {
   return (
     <Link href={`/items/${article.id}`}>
       <Card
@@ -83,7 +84,7 @@ export function ArticleCard({ article, compact = false }: ArticleCardProps) {
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <span>{article.source}</span>
               <span>·</span>
-              <span>{article.publishedAt}</span>
+              <span>{useAbsoluteTime ? article.publishedAtAbsolute : article.publishedAt}</span>
             </div>
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
