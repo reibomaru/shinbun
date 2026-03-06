@@ -6,6 +6,10 @@ import { Separator } from "@/components/ui/separator";
 import { Star, Package, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
+export function generateStaticParams() {
+  return ARCHIVE_DAYS.map((day) => ({ date: day.date }));
+}
+
 interface ArchiveDatePageProps {
   params: Promise<{ date: string }>;
 }
