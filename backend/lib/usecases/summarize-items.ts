@@ -47,52 +47,57 @@ export async function summarizeItems(
       `\r  Summarizing... [${i + 1}/${items.length}] (✓${summarizedCount} ✗${failedCount})`,
     );
 
-    // 1件ずつ要約 → 即永続化
+    // 1件ずつ要約(トランザクション外) → DB書き込みのみトランザクション内で永続化
     try {
       const result = await summarizeItem(input);
       totalCost += result.llmCost;
 
-      // item 更新 + entity 作成をトランザクションで永続化
-      await prisma.$transaction(async (tx) => {
-        await tx.item.update({
-          where: { id: item.id },
-          data: {
-            summaryShort: result.summaryShort,
-            summaryMedium: result.summaryMedium,
-            keyPoints: result.keyPoints,
-            whyItMatters: result.whyItMatters,
-            llmModelUsed: result.modelUsed,
-            llmCost: { increment: result.llmCost },
-            status: "processed",
-          },
-        });
-
-        for (const entity of result.entities) {
-          const dbEntity = await tx.entity.upsert({
-            where: {
-              entityType_name: { entityType: entity.type, name: entity.name },
-            },
-            create: { entityType: entity.type, name: entity.name },
-            update: {},
-          });
-
-          await tx.itemEntity.upsert({
-            where: {
-              itemId_entityId: { itemId: item.id, entityId: dbEntity.id },
-            },
-            create: {
-              itemId: item.id,
-              entityId: dbEntity.id,
-              role: entity.role,
-              confidence: entity.confidence,
-            },
-            update: {
-              role: entity.role,
-              confidence: entity.confidence,
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.item.update({
+            where: { id: item.id },
+            data: {
+              summaryShort: result.summaryShort,
+              summaryMedium: result.summaryMedium,
+              keyPoints: result.keyPoints,
+              whyItMatters: result.whyItMatters,
+              llmModelUsed: result.modelUsed,
+              llmCost: { increment: result.llmCost },
+              status: "processed",
             },
           });
-        }
-      });
+
+          for (const entity of result.entities) {
+            const dbEntity = await tx.entity.upsert({
+              where: {
+                entityType_name: {
+                  entityType: entity.type,
+                  name: entity.name,
+                },
+              },
+              create: { entityType: entity.type, name: entity.name },
+              update: {},
+            });
+
+            await tx.itemEntity.upsert({
+              where: {
+                itemId_entityId: { itemId: item.id, entityId: dbEntity.id },
+              },
+              create: {
+                itemId: item.id,
+                entityId: dbEntity.id,
+                role: entity.role,
+                confidence: entity.confidence,
+              },
+              update: {
+                role: entity.role,
+                confidence: entity.confidence,
+              },
+            });
+          }
+        },
+        { timeout: 15000 },
+      );
 
       summarizedCount++;
     } catch (err) {
