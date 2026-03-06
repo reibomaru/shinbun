@@ -1,0 +1,224 @@
+import { prisma } from "./client";
+import type {
+  Article,
+  Topic,
+  Format,
+  Release,
+  SavedGroup,
+  CategoryCounts,
+} from "../types";
+
+// ─── Helpers ──────────────────────────────────────────
+
+const TOPIC_VALUES = ["genai", "frontend", "backend", "devtools", "security"];
+const FORMAT_VALUES = ["release", "tutorial", "benchmark", "incident", "announcement"];
+
+function extractLabel(
+  labels: { labelType: string; labelValue: string }[],
+  type: string,
+  allowed: string[],
+  fallback: string,
+): string {
+  const found = labels.find(
+    (l) => l.labelType === type && allowed.includes(l.labelValue),
+  );
+  return found?.labelValue ?? fallback;
+}
+
+const AGGREGATOR_SOURCE_TYPES = new Set(["hackernews", "rss", "reddit"]);
+
+function extractSourceName(url: string, sourceName: string, sourceType: string): string {
+  if (!AGGREGATOR_SOURCE_TYPES.has(sourceType)) return sourceName;
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    const parts = hostname.split(".");
+    return parts.length >= 2 ? parts[parts.length - 2] : hostname;
+  } catch {
+    return sourceName;
+  }
+}
+
+function relativeTime(date: Date | null | undefined): string {
+  if (!date) return "";
+  const now = Date.now();
+  const diffMs = now - date.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "たった今";
+  if (diffMin < 60) return `${diffMin}分前`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}時間前`;
+  const diffDay = Math.floor(diffHour / 24);
+  return `${diffDay}日前`;
+}
+
+type ItemRow = Awaited<ReturnType<typeof queryItems>>[number];
+
+async function queryItems(where: object = {}, orderBy: object = {}, limit?: number) {
+  return prisma.item.findMany({
+    where: { status: "processed", ...where },
+    orderBy: { createdAt: "desc", ...orderBy },
+    take: limit,
+    include: {
+      labels: true,
+      rawEvent: { include: { source: true } },
+      savedItems: { take: 1 },
+      readStatus: true,
+      itemEntities: { include: { entity: true } },
+    },
+  });
+}
+
+function mapItemToArticle(item: ItemRow): Article {
+  const topic = extractLabel(item.labels, "topic", TOPIC_VALUES, "genai") as Topic;
+  const format = extractLabel(item.labels, "format", FORMAT_VALUES, "announcement") as Format;
+
+  return {
+    id: item.id,
+    title: item.title,
+    summaryShort: item.summaryShort ?? "",
+    summaryMedium: item.summaryMedium ?? "",
+    keyPoints: (item.keyPoints as string[] | null) ?? [],
+    whyItMatters: item.whyItMatters ?? "",
+    topic,
+    format,
+    source: extractSourceName(item.url, item.rawEvent.source.name, item.rawEvent.source.type),
+    publishedAt: relativeTime(item.publishedAt),
+    language: (item.language === "JA" ? "JA" : "EN") as "EN" | "JA",
+    importanceScore: item.importanceScore ?? 0,
+    isRead: item.readStatus !== null,
+    isSaved: item.savedItems.length > 0,
+    isUrgent: item.isUrgent,
+    url: item.url,
+    entities: item.itemEntities.map((ie) => ie.entity.name),
+    relatedArticles: [],
+  };
+}
+
+// ─── Public query functions ───────────────────────────
+
+export async function getArticles(
+  opts: { topic?: string; limit?: number } = {},
+): Promise<Article[]> {
+  const where: Record<string, unknown> = {};
+  if (opts.topic) {
+    where.labels = { some: { labelType: "topic", labelValue: opts.topic } };
+  }
+  const items = await queryItems(where, {}, opts.limit);
+  return items.map(mapItemToArticle);
+}
+
+export async function getTopStories(limit = 3): Promise<Article[]> {
+  const items = await prisma.item.findMany({
+    where: { status: "processed" },
+    orderBy: { importanceScore: "desc" },
+    take: limit,
+    include: {
+      labels: true,
+      rawEvent: { include: { source: true } },
+      savedItems: { take: 1 },
+      readStatus: true,
+      itemEntities: { include: { entity: true } },
+    },
+  });
+  return items.map(mapItemToArticle);
+}
+
+export async function getUrgentArticles(): Promise<Article[]> {
+  const items = await queryItems({ isUrgent: true });
+  return items.map(mapItemToArticle);
+}
+
+export async function getArticleById(id: string): Promise<Article | null> {
+  const item = await prisma.item.findUnique({
+    where: { id },
+    include: {
+      labels: true,
+      rawEvent: { include: { source: true } },
+      savedItems: { take: 1 },
+      readStatus: true,
+      itemEntities: { include: { entity: true } },
+    },
+  });
+  if (!item) return null;
+  return mapItemToArticle(item);
+}
+
+export async function getReleases(limit = 5): Promise<Release[]> {
+  const items = await prisma.item.findMany({
+    where: {
+      status: "processed",
+      labels: { some: { labelType: "format", labelValue: "release" } },
+    },
+    orderBy: { publishedAt: "desc" },
+    take: limit,
+    include: {
+      rawEvent: { include: { source: true } },
+    },
+  });
+  return items.map((item) => ({
+    name: item.title,
+    source: extractSourceName(item.url, item.rawEvent.source.name, item.rawEvent.source.type),
+    publishedAt: relativeTime(item.publishedAt),
+    score: item.importanceScore ?? 0,
+  }));
+}
+
+export async function getCategoryCounts(): Promise<CategoryCounts> {
+  const labels = await prisma.itemLabel.groupBy({
+    by: ["labelValue"],
+    where: {
+      labelType: "topic",
+      item: { status: "processed" },
+    },
+    _count: { labelValue: true },
+  });
+
+  const TOPIC_DISPLAY: Record<string, string> = {
+    genai: "GenAI",
+    frontend: "Frontend",
+    backend: "Backend",
+    devtools: "Tools",
+    security: "Security",
+  };
+
+  const counts: CategoryCounts = {};
+  for (const row of labels) {
+    const display = TOPIC_DISPLAY[row.labelValue] ?? row.labelValue;
+    counts[display] = row._count.labelValue;
+  }
+  return counts;
+}
+
+export async function getSavedArticles(): Promise<SavedGroup[]> {
+  const savedItems = await prisma.savedItem.findMany({
+    orderBy: { savedAt: "desc" },
+    include: {
+      item: {
+        include: {
+          rawEvent: { include: { source: true } },
+        },
+      },
+    },
+  });
+
+  const groups = new Map<string, SavedGroup>();
+  for (const si of savedItems) {
+    const dateKey = si.savedAt.toLocaleDateString("ja-JP", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    if (!groups.has(dateKey)) {
+      groups.set(dateKey, { date: dateKey, items: [] });
+    }
+    groups.get(dateKey)!.items.push({
+      id: si.item.id,
+      savedItemId: si.id,
+      title: si.item.title,
+      source: extractSourceName(si.item.url, si.item.rawEvent.source.name, si.item.rawEvent.source.type),
+      publishedAt: relativeTime(si.item.publishedAt),
+      tags: (si.tags as string[] | null) ?? [],
+    });
+  }
+  return Array.from(groups.values());
+}
