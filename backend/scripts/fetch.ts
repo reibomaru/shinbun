@@ -1,5 +1,6 @@
 import { loadSources } from "../lib/config.js";
 import { rawEventRepository, sourceRepository } from "../lib/container.js";
+import { prisma } from "../lib/db/client.js";
 import { fetchSource } from "../lib/fetchers/index.js";
 import { checkCost } from "../lib/usecases/check-cost.js";
 import { classifyEvents } from "../lib/usecases/classify-events.js";
@@ -33,14 +34,7 @@ async function main() {
 
       if (!result.ok) {
         console.error(`  ✗ ${label}: ${result.error}`);
-        // エラー時: error_count インクリメント
-        await prisma.source.update({
-          where: { id: source.id },
-          data: {
-            errorCount: { increment: 1 },
-            lastError: result.error,
-          },
-        });
+        await sourceRepository.incrementErrorCount(source.id, result.error);
         return { source: label, fetched: 0, saved: 0 };
       }
 

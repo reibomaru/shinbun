@@ -13,7 +13,6 @@
     "db:push": "prisma db push --schema backend/migration/schema.prisma",
     "db:seed": "prisma db seed",
     "fetch": "tsx --env-file=.env backend/scripts/fetch.ts",
-    "fetch-hn": "tsx --env-file=.env backend/scripts/fetch-hn.ts",
     "test": "vitest run",
     "lint": "biome check backend/",
     "lint:fix": "biome check --fix backend/",
