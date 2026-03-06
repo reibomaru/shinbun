@@ -116,9 +116,7 @@ export async function summarizeItems(
   }
 
   if (totalProcessed > 0) {
-    process.stdout.write(
-      `\r  Summarizing... done (✓${summarizedCount} ✗${failedCount})\n`,
-    );
+    process.stdout.write(`\r  Summarizing... done (✓${summarizedCount} ✗${failedCount})\n`);
   }
 
   return { summarized: summarizedCount, totalCost };
