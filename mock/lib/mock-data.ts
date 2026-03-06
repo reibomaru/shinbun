@@ -12,6 +12,7 @@ export interface Article {
   format: Format;
   source: string;
   publishedAt: string;
+  publishedAtAbsolute: string;
   language: "EN" | "JA";
   importanceScore: number;
   isRead: boolean;
@@ -39,6 +40,7 @@ export const ARTICLES: Article[] = [
     format: "release",
     source: "Anthropic",
     publishedAt: "2時間前",
+    publishedAtAbsolute: "2026/03/05 14:00",
     language: "EN",
     importanceScore: 98,
     isRead: false,
@@ -63,6 +65,7 @@ export const ARTICLES: Article[] = [
     format: "release",
     source: "Vercel",
     publishedAt: "5時間前",
+    publishedAtAbsolute: "2026/03/05 11:00",
     language: "EN",
     importanceScore: 85,
     isRead: false,
@@ -87,6 +90,7 @@ export const ARTICLES: Article[] = [
     format: "release",
     source: "Meta",
     publishedAt: "8時間前",
+    publishedAtAbsolute: "2026/03/05 08:00",
     language: "EN",
     importanceScore: 72,
     isRead: true,
@@ -111,6 +115,7 @@ export const ARTICLES: Article[] = [
     format: "release",
     source: "Google",
     publishedAt: "12時間前",
+    publishedAtAbsolute: "2026/03/05 04:00",
     language: "EN",
     importanceScore: 68,
     isRead: false,
@@ -135,6 +140,7 @@ export const ARTICLES: Article[] = [
     format: "release",
     source: "Meta",
     publishedAt: "1日前",
+    publishedAtAbsolute: "2026/03/04 10:00",
     language: "EN",
     importanceScore: 61,
     isRead: true,
@@ -159,6 +165,7 @@ export const ARTICLES: Article[] = [
     format: "release",
     source: "Supabase",
     publishedAt: "2日前",
+    publishedAtAbsolute: "2026/03/03 15:00",
     language: "EN",
     importanceScore: 55,
     isRead: true,
@@ -183,6 +190,7 @@ export const ARTICLES: Article[] = [
     format: "incident",
     source: "CVE Database",
     publishedAt: "30分前",
+    publishedAtAbsolute: "2026/03/05 15:30",
     language: "EN",
     importanceScore: 99,
     isRead: false,
@@ -208,6 +216,7 @@ export const ARTICLES: Article[] = [
     format: "release",
     source: "Anthropic",
     publishedAt: "3時間前",
+    publishedAtAbsolute: "2026/03/05 13:00",
     language: "EN",
     importanceScore: 92,
     isRead: false,
@@ -219,11 +228,11 @@ export const ARTICLES: Article[] = [
 ];
 
 export const RELEASES = [
-  { name: "Claude Code v1.2", source: "Anthropic", publishedAt: "2時間前", score: 92 },
-  { name: "Next.js 15.2", source: "Vercel", publishedAt: "5時間前", score: 85 },
-  { name: "React 19.1", source: "Meta", publishedAt: "1日前", score: 61 },
-  { name: "Supabase v2.8", source: "Supabase", publishedAt: "2日前", score: 55 },
-  { name: "Tailwind CSS v4.1", source: "Tailwind Labs", publishedAt: "3日前", score: 48 },
+  { name: "Claude Code v1.2", source: "Anthropic", publishedAt: "2時間前", publishedAtAbsolute: "2026/03/05 14:00", score: 92 },
+  { name: "Next.js 15.2", source: "Vercel", publishedAt: "5時間前", publishedAtAbsolute: "2026/03/05 11:00", score: 85 },
+  { name: "React 19.1", source: "Meta", publishedAt: "1日前", publishedAtAbsolute: "2026/03/04 10:00", score: 61 },
+  { name: "Supabase v2.8", source: "Supabase", publishedAt: "2日前", publishedAtAbsolute: "2026/03/03 15:00", score: 55 },
+  { name: "Tailwind CSS v4.1", source: "Tailwind Labs", publishedAt: "3日前", publishedAtAbsolute: "2026/03/02 09:00", score: 48 },
 ];
 
 export const CATEGORY_COUNTS = {
@@ -232,6 +241,28 @@ export const CATEGORY_COUNTS = {
   Backend: 5,
   Tools: 9,
 };
+
+export interface ArchiveDay {
+  date: string; // YYYY-MM-DD
+  dayOfWeek: string;
+  articleCount: number;
+  topTitle: string;
+}
+
+export const ARCHIVE_DAYS: ArchiveDay[] = [
+  { date: "2026-03-05", dayOfWeek: "木", articleCount: 24, topTitle: "Claude 3.7 Sonnet リリース" },
+  { date: "2026-03-04", dayOfWeek: "水", articleCount: 18, topTitle: "GPT-5 APIベータ公開" },
+  { date: "2026-03-03", dayOfWeek: "火", articleCount: 22, topTitle: "Deno 2.1 リリース" },
+  { date: "2026-03-02", dayOfWeek: "月", articleCount: 15, topTitle: "Tailwind CSS v4.1 リリース" },
+  { date: "2026-03-01", dayOfWeek: "日", articleCount: 20, topTitle: "React Server Components 実践ガイド" },
+  { date: "2026-02-28", dayOfWeek: "土", articleCount: 16, topTitle: "Supabase v2.8 Edge Functions改善" },
+  { date: "2026-02-27", dayOfWeek: "金", articleCount: 19, topTitle: "Bun 1.3 リリース" },
+  { date: "2026-02-26", dayOfWeek: "木", articleCount: 21, topTitle: "LangChain v0.4 リリース" },
+  { date: "2026-02-25", dayOfWeek: "水", articleCount: 14, topTitle: "Vercel AI SDK 4.0" },
+  { date: "2026-02-24", dayOfWeek: "火", articleCount: 17, topTitle: "Rust 1.85 安定版リリース" },
+  { date: "2026-02-23", dayOfWeek: "月", articleCount: 23, topTitle: "Next.js 15.1 セキュリティ修正" },
+  { date: "2026-02-22", dayOfWeek: "日", articleCount: 12, topTitle: "Prisma 6.0 リリース" },
+];
 
 export const SAVED_ARTICLES = [
   {
