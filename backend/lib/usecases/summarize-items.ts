@@ -9,110 +9,117 @@ import { summarizeItem } from "../processors/summarize.js";
 export async function summarizeItems(
   prisma: PrismaClient,
 ): Promise<{ summarized: number; totalCost: number }> {
-  // pending ステータスの item を重要度順で最大100件取得
-  const items = await prisma.item.findMany({
-    where: {
-      status: "pending",
-    },
-    include: {
-      rawEvent: true,
-      labels: true,
-    },
-    orderBy: { importanceScore: "desc" },
-    take: 100,
-  });
-
-  if (items.length === 0) {
-    console.log("  No items to summarize, skipping Stage 3");
-    return { summarized: 0, totalCost: 0 };
-  }
-
-  console.log(`  Summarizing ${items.length} items...`);
-
+  const BATCH_SIZE = 10;
   let summarizedCount = 0;
   let failedCount = 0;
   let totalCost = 0;
+  let totalProcessed = 0;
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const topicLabel = item.labels.find((l) => l.labelType === "topic");
-    const input: SummarizeInput = {
-      title: item.title,
-      url: item.url,
-      topic: topicLabel?.labelValue ?? "unknown",
-      payload: item.rawEvent.payload as Record<string, unknown>,
-    };
+  // 10件ずつ取得して処理。コネクション確保のオーバーヘッドを抑える
+  for (;;) {
+    const items = await prisma.item.findMany({
+      where: {
+        status: "pending",
+      },
+      include: {
+        rawEvent: true,
+        labels: true,
+      },
+      orderBy: { importanceScore: "desc" },
+      take: BATCH_SIZE,
+    });
 
-    process.stdout.write(
-      `\r  Summarizing... [${i + 1}/${items.length}] (✓${summarizedCount} ✗${failedCount})`,
-    );
+    if (items.length === 0) {
+      if (totalProcessed === 0) {
+        console.log("  No items to summarize, skipping Stage 3");
+      }
+      break;
+    }
 
-    // 1件ずつ要約(トランザクション外) → DB書き込みのみトランザクション内で永続化
-    try {
-      const result = await summarizeItem(input);
-      totalCost += result.llmCost;
+    if (totalProcessed === 0) {
+      const pendingCount = await prisma.item.count({ where: { status: "pending" } });
+      console.log(`  Summarizing ${pendingCount} items (batch size: ${BATCH_SIZE})...`);
+    }
 
-      await prisma.$transaction(
-        async (tx) => {
-          await tx.item.update({
-            where: { id: item.id },
-            data: {
-              summaryShort: result.summaryShort,
-              summaryMedium: result.summaryMedium,
-              keyPoints: result.keyPoints,
-              whyItMatters: result.whyItMatters,
-              llmModelUsed: result.modelUsed,
-              llmCost: { increment: result.llmCost },
-              status: "processed",
-            },
-          });
+    for (const item of items) {
+      totalProcessed++;
+      const topicLabel = item.labels.find((l) => l.labelType === "topic");
+      const input: SummarizeInput = {
+        title: item.title,
+        url: item.url,
+        topic: topicLabel?.labelValue ?? "unknown",
+        payload: item.rawEvent.payload as Record<string, unknown>,
+      };
 
-          for (const entity of result.entities) {
-            const dbEntity = await tx.entity.upsert({
-              where: {
-                entityType_name: {
-                  entityType: entity.type,
-                  name: entity.name,
-                },
-              },
-              create: { entityType: entity.type, name: entity.name },
-              update: {},
-            });
-
-            await tx.itemEntity.upsert({
-              where: {
-                itemId_entityId: { itemId: item.id, entityId: dbEntity.id },
-              },
-              create: {
-                itemId: item.id,
-                entityId: dbEntity.id,
-                role: entity.role,
-                confidence: entity.confidence,
-              },
-              update: {
-                role: entity.role,
-                confidence: entity.confidence,
-              },
-            });
-          }
-        },
-        { timeout: 15000 },
+      process.stdout.write(
+        `\r  Summarizing... [${totalProcessed}] (✓${summarizedCount} ✗${failedCount})`,
       );
 
-      summarizedCount++;
-    } catch (err) {
-      failedCount++;
-      console.warn(`\n  ✗ Failed for "${item.title}": ${err}`);
-      await prisma.item.update({
-        where: { id: item.id },
-        data: { status: "llm_error" },
-      });
+      // 1件ずつ要約 → DB書き込み（トランザクション不使用でコネクション確保のオーバーヘッドを排除）
+      // entity upsert → item update の順で書き込み、全て成功してから processed にする
+      try {
+        const result = await summarizeItem(input);
+        totalCost += result.llmCost;
+
+        for (const entity of result.entities) {
+          const dbEntity = await prisma.entity.upsert({
+            where: {
+              entityType_name: {
+                entityType: entity.type,
+                name: entity.name,
+              },
+            },
+            create: { entityType: entity.type, name: entity.name },
+            update: {},
+          });
+
+          await prisma.itemEntity.upsert({
+            where: {
+              itemId_entityId: { itemId: item.id, entityId: dbEntity.id },
+            },
+            create: {
+              itemId: item.id,
+              entityId: dbEntity.id,
+              role: entity.role,
+              confidence: entity.confidence,
+            },
+            update: {
+              role: entity.role,
+              confidence: entity.confidence,
+            },
+          });
+        }
+
+        await prisma.item.update({
+          where: { id: item.id },
+          data: {
+            summaryShort: result.summaryShort,
+            summaryMedium: result.summaryMedium,
+            keyPoints: result.keyPoints,
+            whyItMatters: result.whyItMatters,
+            llmModelUsed: result.modelUsed,
+            llmCost: { increment: result.llmCost },
+            status: "processed",
+          },
+        });
+
+        summarizedCount++;
+      } catch (err) {
+        failedCount++;
+        console.warn(`\n  ✗ Failed for "${item.title}": ${err}`);
+        await prisma.item.update({
+          where: { id: item.id },
+          data: { status: "llm_error" },
+        });
+      }
     }
   }
 
-  process.stdout.write(
-    `\r  Summarizing... [${items.length}/${items.length}] (✓${summarizedCount} ✗${failedCount})\n`,
-  );
+  if (totalProcessed > 0) {
+    process.stdout.write(
+      `\r  Summarizing... done (✓${summarizedCount} ✗${failedCount})\n`,
+    );
+  }
 
   return { summarized: summarizedCount, totalCost };
 }
