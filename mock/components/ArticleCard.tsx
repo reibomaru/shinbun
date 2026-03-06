@@ -55,14 +55,14 @@ export function ArticleCard({ article, compact = false, useAbsoluteTime = false 
       >
         <CardContent className={compact ? "p-3" : "p-4"}>
           {/* Labels */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}>
               {TOPIC_LABELS[article.topic]}
             </span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}>
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}>
               {FORMAT_LABELS[article.format]}
             </span>
-            <Badge variant="outline" className="text-xs py-0.5">
+            <Badge variant="outline" className="text-xs py-1">
               {article.language}
             </Badge>
           </div>
@@ -95,16 +95,16 @@ export function ArticleCard({ article, compact = false, useAbsoluteTime = false 
           {/* Actions */}
           {!compact && (
             <div className="flex gap-1 mt-3" onClick={(e) => e.preventDefault()}>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-gray-500 hover:text-blue-600">
-                <Bookmark className="w-3 h-3 mr-1" />
+              <Button variant="ghost" size="sm" className="h-11 sm:h-8 px-3 sm:px-2 text-xs text-gray-500 hover:text-blue-600">
+                <Bookmark className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-1" />
                 保存
               </Button>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-gray-500 hover:text-green-600">
-                <ThumbsUp className="w-3 h-3 mr-1" />
+              <Button variant="ghost" size="sm" className="h-11 sm:h-8 px-3 sm:px-2 text-xs text-gray-500 hover:text-green-600">
+                <ThumbsUp className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-1" />
                 役立った
               </Button>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-gray-500 hover:text-red-500">
-                <ThumbsDown className="w-3 h-3 mr-1" />
+              <Button variant="ghost" size="sm" className="h-11 sm:h-8 px-3 sm:px-2 text-xs text-gray-500 hover:text-red-500">
+                <ThumbsDown className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-1" />
                 不要
               </Button>
             </div>
