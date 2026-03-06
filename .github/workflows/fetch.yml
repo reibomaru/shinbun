@@ -1,4 +1,4 @@
-name: Fetch
+name: Fetch (All Sources)
 
 on:
   schedule:
@@ -9,6 +9,17 @@ jobs:
   fetch:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    concurrency:
+      group: fetch
+      cancel-in-progress: false
+    permissions:
+      contents: read
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +34,3 @@ jobs:
       - run: npx prisma generate --schema backend/migration/schema.prisma
 
       - run: npx tsx backend/scripts/fetch.ts
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

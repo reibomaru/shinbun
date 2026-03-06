@@ -481,12 +481,11 @@ keywords:
 
 | ワークフローファイル | スケジュール（cron式） | 処理内容 | 状態 |
 |---|---|---|---|
-| `fetch-hn.yml` | `*/30 * * * *`（30分毎） | HN Top/Best取得 → Stage 1-3処理 | 実装済み |
-| `fetch.yml` | `0 * * * *`（毎時0分） | 全ソース新着取得 → Stage 1-3処理 | 実装済み |
+| `fetch.yml` | `*/30 * * * *`（30分毎） | 全ソース（HN含む）新着取得 → Stage 1-3処理 | 実装済み |
 | `digest.yml` | `0 23 * * *`（UTC 23:00 = JST 08:00） | 重要度順に整形 → Slack配信 | 未実装 |
 | `cleanup.yml` | `0 0 * * 0`（毎週日曜） | raw_event 30日超・read_status 90日超を削除 | 未実装 |
 
-> バッチ処理はローカルでは `npm run fetch` / `npm run fetch-hn` で手動実行、GitHub Actions で自動実行。
+> バッチ処理はローカルでは `npm run fetch` で手動実行、GitHub Actions で自動実行。
 
 #### GitHub Secrets 設定
 
@@ -521,44 +520,52 @@ jobs:
       - run: npm test
 ```
 
-#### ワークフロー定義例（スクリプト実装済み: fetch.yml 予定）
+#### ワークフロー定義（実装済み: fetch.yml）
 
 ```yaml
 # .github/workflows/fetch.yml
-name: Fetch & Process
+name: Fetch (All Sources)
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+    concurrency:
+      group: fetch
+      cancel-in-progress: false
+    permissions:
+      contents: read
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: 20
+          cache: npm
       - run: npm ci
+      - run: npx prisma generate --schema backend/migration/schema.prisma
       - run: npx tsx backend/scripts/fetch.ts
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
 #### GitHub Actions 実行時間の見積もり（バッチワークフロー実装後）
 
 | ジョブ | 頻度 | 1回あたり | 月間合計 |
 |---|---|---|---|
-| fetch | 24回/日 | ~5分 | 3,600分 |
-| fetch-hn | 48回/日 | ~2分 | 2,880分 |
+| fetch（30分毎） | 48回/日 | ~5分 | 7,200分 |
 | digest | 1回/日 | ~3分 | 90分 |
 | cleanup | 4回/月 | ~2分 | 8分 |
-| **合計** | | | **~6,578分** |
+| **合計** | | | **~7,298分** |
 
 > GitHub Free（プライベートリポジトリ）の無料枠は500分/月のため超過する。
 > **GitHub Pro（$4/月）で3,000分**が付与されるが、それでも不足する場合はfetch頻度を下げる（2時間に1回等）か、リポジトリをパブリックにする（**Actions は無料**）ことで対応可能。
@@ -595,7 +602,7 @@ jobs:
 
 #### 実装済みフロー（共通モジュール: backend/lib/usecases/ Stage 2-3）
 
-fetch.ts・fetch-hn.ts の両方から共通モジュールとして利用される。
+fetch.ts から共通モジュールとして利用される。
 
 ```
   [Stage 2] classifyEvents（Gemini Flash Lite 分類・バッチ処理・並列度5）
@@ -629,6 +636,7 @@ shinbun/
 ├── .github/
 │   ├── workflows/
 │   │   ├── test.yml                # push/PR時のユニットテスト
+│   │   ├── fetch.yml               # 全ソースフェッチ（30分毎）
 │   │   ├── claude.yml              # Claude Code インタラクティブ
 │   │   └── claude-code-review.yml  # PR自動レビュー（設計書整合性チェック）
 │   └── scripts/                    # CI用スクリプト
@@ -640,10 +648,7 @@ shinbun/
 │   │   └── watchlist.yaml          # ウォッチリスト（エンティティ・キーワード）
 │   │
 │   ├── scripts/                    # バッチスクリプト（tsx で実行）
-│   │   ├── fetch.ts                # 全ソースフェッチ → Stage 1 重複排除 → raw_event保存
-│   │   ├── fetch.test.ts
-│   │   ├── fetch-hn.ts             # HNフェッチ → Stage 1-3（分類・要約）パイプライン
-│   │   └── fetch-hn.test.ts
+│   │   └── fetch.ts                # 全ソースフェッチ → Stage 1-3（重複排除・分類・要約）パイプライン
 │   │
 │   ├── lib/
 │   │   ├── config.ts               # config/*.yaml の読み込み（Zod バリデーション）
@@ -652,7 +657,6 @@ shinbun/
 │   │   ├── url.test.ts
 │   │   ├── gemini.ts               # Gemini API クライアント（シングルトン）+ モデル定数
 │   │   ├── gemini.test.ts
-│   │   ├── sources.ts              # syncSources / deduplicateEvents / saveEvents
 │   │   ├── scoring.ts              # 重要度スコアリング（0-100）
 │   │   ├── scoring.test.ts
 │   │   ├── retry.ts                # 指数バックオフリトライ
@@ -707,7 +711,7 @@ shinbun/
 ```
 
 > `backend/config/*.yaml` はリポジトリにコミットして管理する。設定変更はファイル編集 → `main` へのプッシュで反映される。
-> バッチスクリプトはローカルでは `npm run fetch` / `npm run fetch-hn` で実行する。GitHub Actions では `npx tsx backend/scripts/fetch-hn.ts` で実行。
+> バッチスクリプトはローカルでは `npm run fetch` で実行する。GitHub Actions では `npx tsx backend/scripts/fetch.ts` で実行。
 > `backend/lib/` 配下のモジュールは `backend/scripts/` から参照される。フロントエンド（`mock/`）は現在モックデータを使用しており、DB未接続。
 
 ### 6.5 Supabase 構成
@@ -741,7 +745,6 @@ shinbun/
     "db:push": "prisma db push --schema backend/migration/schema.prisma",
     "db:seed": "prisma db seed",
     "fetch": "tsx --env-file=.env backend/scripts/fetch.ts",
-    "fetch-hn": "tsx --env-file=.env backend/scripts/fetch-hn.ts",
     "test": "vitest run"
   }
 }
@@ -757,11 +760,10 @@ APIキー等の機密情報は必ず **GitHub Secrets** で管理し、コード
 
 | ジョブ | 頻度/月 | 1回あたり | 月間合計 |
 |---|---|---|---|
-| fetch（毎時） | 720回 | ~5分 | ~3,600分 |
-| fetch-hn（30分毎） | 1,440回 | ~2分 | ~2,880分 |
+| fetch（30分毎） | 1,440回 | ~5分 | ~7,200分 |
 | digest（毎朝） | 30回 | ~3分 | ~90分 |
 | cleanup（毎週） | 4回 | ~2分 | ~8分 |
-| **合計** | | | **~6,578分** |
+| **合計** | | | **~7,298分** |
 
 > パブリックリポジトリであれば上記すべて **$0**。
 
