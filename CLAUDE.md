@@ -29,7 +29,11 @@ shinbun/
 │   │   ├── config.ts       # 設定
 │   │   └── db/             # Prisma クライアント
 │   └── scripts/    # エントリーポイント（薄いオーケストレーター）
-├── mock/           # Next.js Web UI（フロントエンド）
+├── frontend/       # 本番フロントエンド実装（実際の画面）
+│   ├── app/        # App Router ページ
+│   ├── components/ # React コンポーネント
+│   └── lib/        # ユーティリティ
+├── mock/           # デザインプレビュー用（モックデータでUIを確認）
 │   ├── app/        # App Router ページ
 │   ├── components/ # React コンポーネント
 │   └── lib/        # ユーティリティ・モックデータ

@@ -47,12 +47,12 @@ export default async function DashboardPage() {
       ))}
 
       {/* Filter bar */}
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="h-8 text-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <Button variant="outline" size="sm" className="h-9 text-xs w-fit">
           <Filter className="w-3 h-3 mr-1" />
           未読のみ
         </Button>
-        <div className="flex items-center gap-2 ml-auto text-xs text-gray-500">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:ml-auto text-xs text-gray-500">
           {Object.entries(counts).map(([cat, count]) => (
             <span key={cat}>
               <span className="font-medium text-gray-700">{cat}</span>: {count}件
@@ -77,7 +77,7 @@ export default async function DashboardPage() {
                   <span className="text-2xl font-bold text-gray-200 leading-none mt-1 w-6 shrink-0">
                     {i + 1}
                   </span>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <ArticleCard article={article} />
                   </div>
                 </div>
@@ -145,7 +145,7 @@ export default async function DashboardPage() {
 
         {/* Right column: Releases */}
         <aside className="flex flex-col gap-4">
-          <Card className="sticky top-20">
+          <Card className="lg:sticky lg:top-20">
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-bold text-gray-700 uppercase tracking-wide">
                 <Package className="w-4 h-4 text-gray-500" />
