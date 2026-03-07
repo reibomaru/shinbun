@@ -52,14 +52,14 @@ export function ArticleCard({ article, compact = false }: ArticleCardProps) {
       >
         <CardContent className={compact ? "p-3" : "p-4"}>
           {/* Labels */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}>
               {TOPIC_LABELS[article.topic]}
             </span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}>
+            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}>
               {FORMAT_LABELS[article.format]}
             </span>
-            <Badge variant="outline" className="text-xs py-0.5">
+            <Badge variant="outline" className="text-xs py-1">
               {article.language}
             </Badge>
           </div>

@@ -11,22 +11,22 @@ export default function SavedPage() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-2">
           <Bookmark className="w-5 h-5 text-gray-700" />
           <h1 className="text-lg font-bold text-gray-900">保存済み記事</h1>
           <span className="text-sm text-gray-500">({totalCount}件)</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-8 text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" className="h-9 text-xs">
             日付順
             <ChevronDown className="w-3 h-3 ml-1" />
           </Button>
-          <Button variant="outline" size="sm" className="h-8 text-xs">
+          <Button variant="outline" size="sm" className="h-9 text-xs">
             タグで絞り込み
             <ChevronDown className="w-3 h-3 ml-1" />
           </Button>
-          <Button variant="outline" size="sm" className="h-8 text-xs text-gray-500">
+          <Button variant="outline" size="sm" className="h-9 text-xs text-gray-500">
             <Download className="w-3.5 h-3.5 mr-1" />
             エクスポート
           </Button>
@@ -39,7 +39,7 @@ export default function SavedPage() {
         {["llm", "api", "frontend", "backend", "react", "serverless"].map((tag) => (
           <button
             key={tag}
-            className="text-xs px-3 py-1 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-colors"
+            className="text-xs px-3 py-2 min-h-[44px] sm:min-h-0 sm:py-1 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-colors"
           >
             {tag}
           </button>

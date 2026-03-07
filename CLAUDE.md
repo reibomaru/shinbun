@@ -29,7 +29,11 @@ shinbun/
 │   │   ├── config.ts       # 設定
 │   │   └── db/             # Prisma クライアント
 │   └── scripts/    # エントリーポイント（薄いオーケストレーター）
-├── mock/           # Next.js Web UI（フロントエンド）
+├── frontend/       # 本番フロントエンド実装（実際の画面）
+│   ├── app/        # App Router ページ
+│   ├── components/ # React コンポーネント
+│   └── lib/        # ユーティリティ
+├── mock/           # デザインプレビュー用（モックデータでUIを確認）
 │   ├── app/        # App Router ページ
 │   ├── components/ # React コンポーネント
 │   └── lib/        # ユーティリティ・モックデータ
@@ -93,14 +97,23 @@ shinbun/
 ## 開発コマンド
 
 ```bash
+# 依存インストール
+pnpm install
+
 # フロントエンド開発サーバー
-cd mock && npm run dev
+pnpm --filter mock dev
 
 # ビルド
-cd mock && npm run build
+pnpm --filter mock build
 
-# リント
-cd mock && npm run lint
+# リント（バックエンド）
+pnpm run lint
+
+# リント（フロントエンド）
+pnpm --filter mock lint
+
+# テスト
+pnpm test
 ```
 
 ## Git ワークフロー

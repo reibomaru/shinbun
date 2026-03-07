@@ -33,5 +33,5 @@ jobs:
             - 機能仕様 / ユーザーフロー → docs/ai_tech_daily_aggregator_prd_v_2.md
             乖離がある場合は「設計書の更新が必要」と明示し、具体的にどの箇所を更新すべきか指摘してください。
           claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(jq:*),Read,Glob,Grep,Task,WebFetch"
+            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(jq:*),Bash(echo:*),Read,Glob,Grep,Task,WebFetch"
           use_sticky_comment: true

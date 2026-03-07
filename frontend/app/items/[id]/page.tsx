@@ -62,9 +62,9 @@ export default async function ArticleDetailPage({
       <MarkAsRead itemId={article.id} isRead={article.isRead} />
 
       {/* Back nav + Actions */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <Link href="/">
-          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900">
+          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900 h-11 sm:h-9">
             <ArrowLeft className="w-4 h-4 mr-1" />
             一覧へ
           </Button>
