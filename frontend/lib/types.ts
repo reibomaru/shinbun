@@ -52,4 +52,5 @@ export interface ArchiveDay {
   dayOfWeek: string; // "木"
   articleCount: number;
   topTitle: string;
+  titles: string[];
 }

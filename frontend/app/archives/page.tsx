@@ -33,14 +33,14 @@ export default async function ArchivesPage() {
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3 border-b border-gray-200 pb-2">
               {month}
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="flex flex-col gap-3">
               {days.map((day) => {
                 const [, m, d] = day.date.split("-");
                 return (
                   <Link key={day.date} href={`/archives/${day.date}`}>
-                    <Card className="cursor-pointer transition-all hover:shadow-md hover:border-gray-300 h-full">
+                    <Card className="cursor-pointer transition-all hover:shadow-md hover:border-gray-300">
                       <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-3">
                           <span className="text-lg font-bold text-gray-900">
                             {Number(m)}/{Number(d)}
                             <span className="text-sm font-normal text-gray-400 ml-1">({day.dayOfWeek})</span>
@@ -50,9 +50,14 @@ export default async function ArchivesPage() {
                             <span>{day.articleCount}件</span>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 truncate">
-                          TOP: {day.topTitle}
-                        </p>
+                        <ul className="space-y-1">
+                          {day.titles.slice(0, 10).map((title, i) => (
+                            <li key={i} className="text-sm text-gray-700 truncate flex items-start gap-1.5">
+                              <span className="text-gray-400 shrink-0">・</span>
+                              {title}
+                            </li>
+                          ))}
+                        </ul>
                       </CardContent>
                     </Card>
                   </Link>

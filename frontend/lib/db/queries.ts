@@ -215,7 +215,15 @@ function jstDayOfWeek(dateStr: string): string {
 export async function getArchiveDates(): Promise<ArchiveDay[]> {
   const snapshots = await prisma.dailySnapshot.findMany({
     orderBy: { date: "desc" },
-    select: { date: true, articleCount: true, topTitle: true },
+    select: {
+      date: true,
+      articleCount: true,
+      topTitle: true,
+      items: {
+        select: { item: { select: { title: true, importanceScore: true } } },
+        orderBy: { item: { importanceScore: "desc" } },
+      },
+    },
   });
 
   return snapshots.map((s) => ({
@@ -223,6 +231,7 @@ export async function getArchiveDates(): Promise<ArchiveDay[]> {
     dayOfWeek: jstDayOfWeek(s.date),
     articleCount: s.articleCount,
     topTitle: s.topTitle,
+    titles: s.items.map((si) => si.item.title),
   }));
 }
 

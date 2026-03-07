@@ -19,8 +19,14 @@ export async function createDailySnapshot(
     return { date, created: false, articleCount: existing.articleCount };
   }
 
+  const dayStart = new Date(`${date}T00:00:00+09:00`);
+  const dayEnd = new Date(dayStart.getTime() + 86_400_000);
+
   const items = await prisma.item.findMany({
-    where: { status: "processed" },
+    where: {
+      status: "processed",
+      createdAt: { gte: dayStart, lt: dayEnd },
+    },
     select: { id: true, importanceScore: true, title: true },
     orderBy: { importanceScore: "desc" },
   });
