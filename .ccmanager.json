@@ -1,0 +1,37 @@
+{
+  "worktree": {
+    "autoDirectory": true,
+    "autoDirectoryPattern": "../{project}-{branch}",
+    "copySessionData": true,
+    "sortByLastSession": false,
+    "autoUseDefaultBranch": false
+  },
+  "statusHooks": {
+    "idle": {
+      "command": "",
+      "enabled": true
+    },
+    "busy": {
+      "command": "",
+      "enabled": true
+    },
+    "waiting_input": {
+      "command": "",
+      "enabled": true
+    },
+    "pending_auto_approval": {
+      "command": "",
+      "enabled": true
+    }
+  },
+  "worktreeHooks": {
+    "post_creation": {
+      "command": "cp ../shinbun/.env ./.env && cp ../shinbun/frontend/.env ./frontend/.env && cd backend && pnpm install && cd ../frontend && pnpm install",
+      "enabled": true
+    },
+    "pre_creation": {
+      "command": "export CONFLICT_GUARD_BASE_BRANCH=$CCMANAGER_BASE_BRANCH",
+      "enabled": true
+    }
+  }
+}
