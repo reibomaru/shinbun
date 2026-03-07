@@ -31,3 +31,9 @@ sources:
       mode: top
       min_score: 10
     polling_interval: 1800
+
+  - type: rss
+    name: azukiazusa.dev
+    config:
+      url: https://azukiazusa.dev/rss.xml
+    polling_interval: 3600
