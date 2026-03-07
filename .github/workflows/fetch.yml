@@ -24,13 +24,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
-      - run: npx prisma generate --schema backend/migration/schema.prisma
+      - run: pnpm exec prisma generate --schema backend/migration/schema.prisma
 
-      - run: npx tsx backend/scripts/fetch.ts
+      - run: pnpm exec tsx backend/scripts/fetch.ts
