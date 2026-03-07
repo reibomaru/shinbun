@@ -1,0 +1,36 @@
+name: Archive Daily
+
+on:
+  schedule:
+    - cron: '0 19 * * *' # 04:00 JST
+  workflow_dispatch:
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma generate --schema backend/migration/schema.prisma
+
+      - run: npx tsx backend/scripts/archive.ts
+
+      - name: Trigger Vercel rebuild
+        if: env.VERCEL_DEPLOY_HOOK != ''
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: curl -s -X POST "$VERCEL_DEPLOY_HOOK"

@@ -46,3 +46,10 @@ export interface SavedGroup {
 export interface CategoryCounts {
   [key: string]: number;
 }
+
+export interface ArchiveDay {
+  date: string; // "2026-03-05"
+  dayOfWeek: string; // "木"
+  articleCount: number;
+  topTitle: string;
+}
