@@ -47,6 +47,12 @@ export interface CategoryCounts {
   [key: string]: number;
 }
 
+export interface PaginatedArticles {
+  articles: Article[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 export interface ArchiveDay {
   date: string; // "2026-03-05"
   dayOfWeek: string; // "木"

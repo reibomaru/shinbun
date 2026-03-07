@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Article } from "@/lib/mock-data";
-import { Bookmark, ThumbsUp, ThumbsDown, Star } from "lucide-react";
+import { Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const TOPIC_COLORS: Record<string, string> = {
   genai: "bg-purple-100 text-purple-700",
@@ -47,93 +49,125 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article, compact = false, expanded = false, useAbsoluteTime = false }: ArticleCardProps) {
-  return (
-    <Link href={`/items/${article.id}`}>
-      <Card
-        className={`cursor-pointer transition-all hover:shadow-md hover:border-gray-300 ${
-          article.isRead ? "opacity-50" : ""
-        } ${article.isUrgent ? "border-red-400 bg-red-50" : ""}`}
-      >
-        <CardContent className={compact ? "p-3" : "p-4"}>
-          {/* Labels */}
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}>
-              {TOPIC_LABELS[article.topic]}
-            </span>
-            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}>
-              {FORMAT_LABELS[article.format]}
-            </span>
-            <Badge variant="outline" className="text-xs py-1">
-              {article.language}
-            </Badge>
-          </div>
+  const [isOpen, setIsOpen] = useState(expanded);
 
-          {/* Title */}
-          <h3 className={`font-semibold text-gray-900 leading-snug mb-1 ${compact ? "text-sm" : "text-base"}`}>
+  return (
+    <Card
+      className={`transition-all hover:shadow-md hover:border-gray-300 ${
+        article.isRead ? "opacity-50" : ""
+      }`}
+    >
+      <CardContent className={compact ? "p-3" : "p-4"}>
+        {/* Labels + Actions */}
+        <div className="flex items-center gap-1.5 mb-2">
+          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}>
+            {TOPIC_LABELS[article.topic]}
+          </span>
+          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}>
+            {FORMAT_LABELS[article.format]}
+          </span>
+          <Badge variant="outline" className="text-xs py-1">
+            {article.language}
+          </Badge>
+          {!compact && (
+            <div className="ml-auto flex items-center gap-1">
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-gray-400 hover:text-blue-600" onClick={(e) => e.stopPropagation()}>
+                <Clock className="w-3.5 h-3.5 mr-1" />
+                あとで読む
+              </Button>
+              {expanded && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(!isOpen);
+                  }}
+                >
+                  {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Title */}
+        <Link href={`/items/${article.id}`}>
+          <h3 className={`font-semibold text-gray-900 leading-snug mb-1 cursor-pointer hover:text-blue-600 ${compact ? "text-sm" : "text-base"}`}>
             {article.title}
           </h3>
+        </Link>
 
-          {/* Summary - expanded: full summary + key points, normal: short summary, compact: short summary */}
-          {expanded ? (
-            <div className="mt-2 space-y-3">
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {article.summaryMedium}
-              </p>
-              {article.keyPoints.length > 0 && (
-                <ul className="space-y-1">
-                  {article.keyPoints.map((point, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                      <span className="text-gray-400 mt-0.5 shrink-0">•</span>
-                      <span>{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {article.whyItMatters && (
-                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
-                  <p className="text-xs font-semibold text-amber-800 mb-1">Why it matters</p>
-                  <p className="text-sm text-amber-900">{article.whyItMatters}</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-600 leading-relaxed mb-2 line-clamp-2">
-              {article.summaryShort}
+        {/* Summary */}
+        {isOpen ? (
+          <div className="mt-2 space-y-3">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {article.summaryMedium}
             </p>
-          )}
-
-          {/* Meta */}
-          <div className="flex items-center justify-between gap-2 mt-2">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span>{article.source}</span>
-              <span>·</span>
-              <span>{useAbsoluteTime ? article.publishedAtAbsolute : article.publishedAt}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-              <span className="text-xs font-medium text-gray-700">{article.importanceScore}</span>
-            </div>
+            {article.keyPoints.length > 0 && (
+              <ul className="space-y-1">
+                {article.keyPoints.map((point, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                    <span className="text-gray-400 mt-0.5 shrink-0">•</span>
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {article.whyItMatters && (
+              <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                <p className="text-xs font-semibold text-gray-500 mb-1">Why it matters</p>
+                <p className="text-sm text-gray-700">{article.whyItMatters}</p>
+              </div>
+            )}
           </div>
+        ) : (
+          <p className="text-sm text-gray-600 leading-relaxed mb-2 line-clamp-2">
+            {article.summaryShort}
+          </p>
+        )}
 
-          {/* Actions */}
-          {!compact && (
-            <div className="flex gap-1 mt-3" onClick={(e) => e.preventDefault()}>
-              <Button variant="ghost" size="sm" className="h-11 sm:h-8 px-3 sm:px-2 text-xs text-gray-500 hover:text-blue-600">
-                <Bookmark className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-1" />
-                保存
-              </Button>
-              <Button variant="ghost" size="sm" className="h-11 sm:h-8 px-3 sm:px-2 text-xs text-gray-500 hover:text-green-600">
-                <ThumbsUp className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-1" />
-                役立った
-              </Button>
-              <Button variant="ghost" size="sm" className="h-11 sm:h-8 px-3 sm:px-2 text-xs text-gray-500 hover:text-red-500">
-                <ThumbsDown className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-1" />
-                不要
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
+        {/* Meta */}
+        <div className="flex items-center justify-between gap-2 mt-2">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span>{article.source}</span>
+            <span>·</span>
+            <span>{useAbsoluteTime ? article.publishedAtAbsolute : article.publishedAt}</span>
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-1.5 cursor-help">
+                <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      article.importanceScore >= 80
+                        ? "bg-orange-500"
+                        : article.importanceScore >= 60
+                          ? "bg-blue-500"
+                          : article.importanceScore >= 40
+                            ? "bg-blue-400"
+                            : "bg-gray-400"
+                    }`}
+                    style={{ width: `${article.importanceScore}%` }}
+                  />
+                </div>
+                <span className="text-xs font-medium text-gray-500">{article.importanceScore}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="font-semibold text-xs mb-1.5">重要度スコア（0-100）</p>
+              <ul className="text-xs space-y-0.5">
+                <li>ソース信頼度: 30%</li>
+                <li>コンテンツ品質（LLM評価）: 30%</li>
+                <li>鮮度: 20%</li>
+                <li>エンゲージメント: 20%</li>
+              </ul>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+      </CardContent>
+    </Card>
   );
 }

@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "./db/client";
+import {
+  getAllArticlesSortedPaginated,
+  getArchiveAllArticlesSortedPaginated,
+} from "./db/queries";
+import type { PaginatedArticles } from "./types";
 
 export async function markAsRead(itemId: string) {
   await prisma.readStatus.upsert({
@@ -38,4 +43,15 @@ export async function submitFeedback(
 export async function removeSavedItem(savedItemId: string) {
   await prisma.savedItem.delete({ where: { id: savedItemId } });
   revalidatePath("/saved");
+}
+
+export async function loadMoreArticles(cursor: string): Promise<PaginatedArticles> {
+  return getAllArticlesSortedPaginated(cursor);
+}
+
+export async function loadMoreArchiveArticles(
+  date: string,
+  cursor: string,
+): Promise<PaginatedArticles> {
+  return getArchiveAllArticlesSortedPaginated(date, cursor);
 }

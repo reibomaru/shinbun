@@ -1,4 +1,5 @@
 import { prisma } from "./client";
+import { buildOrderByArray, scaleImportanceScore } from "./query-helpers";
 import type {
   Article,
   ArchiveDay,
@@ -7,6 +8,7 @@ import type {
   Release,
   SavedGroup,
   CategoryCounts,
+  PaginatedArticles,
 } from "../types";
 
 // ─── Helpers ──────────────────────────────────────────
@@ -67,7 +69,7 @@ type ItemRow = Awaited<ReturnType<typeof queryItems>>[number];
 async function queryItems(where: object = {}, orderBy: object = {}, limit?: number) {
   return prisma.item.findMany({
     where: { status: "processed", ...where },
-    orderBy: { createdAt: "desc", ...orderBy },
+    orderBy: buildOrderByArray(orderBy),
     take: limit,
     include: {
       labels: true,
@@ -98,7 +100,7 @@ function mapItemToArticle(
     source: extractSourceName(item.url, item.rawEvent.source.name, item.rawEvent.source.type),
     publishedAt: timeFormatter(item.publishedAt),
     language: (item.language === "JA" ? "JA" : "EN") as "EN" | "JA",
-    importanceScore: item.importanceScore ?? 0,
+    importanceScore: scaleImportanceScore(item.importanceScore),
     isRead: item.readStatus !== null,
     isSaved: item.savedItems.length > 0,
     isUrgent: item.isUrgent,
@@ -203,6 +205,43 @@ export async function getCategoryCounts(): Promise<CategoryCounts> {
   return counts;
 }
 
+const DEFAULT_PAGE_SIZE = 50;
+
+export async function getAllArticlesSorted(limit?: number): Promise<Article[]> {
+  const items = await queryItems({}, { importanceScore: "desc" }, limit ?? DEFAULT_PAGE_SIZE);
+  return items.map((item: ItemRow) => mapItemToArticle(item));
+}
+
+export async function getAllArticlesSortedPaginated(
+  cursor?: string,
+  limit: number = DEFAULT_PAGE_SIZE,
+): Promise<PaginatedArticles> {
+  const take = limit + 1;
+  const items = await prisma.item.findMany({
+    where: { status: "processed" },
+    orderBy: [{ importanceScore: "desc" }, { createdAt: "desc" }],
+    take,
+    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+    include: {
+      labels: true,
+      rawEvent: { include: { source: true } },
+      savedItems: { take: 1 },
+      readStatus: true,
+      itemEntities: { include: { entity: true } },
+    },
+  });
+
+  const hasMore = items.length > limit;
+  const pageItems = hasMore ? items.slice(0, limit) : items;
+  const nextCursor = hasMore ? pageItems[pageItems.length - 1].id : null;
+
+  return {
+    articles: pageItems.map((item) => mapItemToArticle(item)),
+    nextCursor,
+    hasMore,
+  };
+}
+
 // ─── Archive query functions ─────────────────────────
 
 const DAY_OF_WEEK_JA = ["日", "月", "火", "水", "木", "金", "土"];
@@ -248,9 +287,12 @@ async function querySnapshotItems(
   const itemIds = snapshotItems.map((si) => si.itemId);
   if (itemIds.length === 0) return [];
 
+  const orderByArray = orderBy
+    ? buildOrderByArray(orderBy)
+    : [{ createdAt: "desc" as const }];
   return prisma.item.findMany({
     where: { id: { in: itemIds }, ...where },
-    orderBy: orderBy ?? { createdAt: "desc" },
+    orderBy: orderByArray,
     take: limit,
     include: {
       labels: true,
@@ -260,6 +302,49 @@ async function querySnapshotItems(
       itemEntities: { include: { entity: true } },
     },
   }) as Promise<ItemRow[]>;
+}
+
+export async function getArchiveAllArticlesSorted(date: string, limit?: number): Promise<Article[]> {
+  const items = await querySnapshotItems(date, {}, { importanceScore: "desc" }, limit ?? DEFAULT_PAGE_SIZE);
+  return items.map((item: ItemRow) => mapItemToArticle(item, absoluteTime));
+}
+
+export async function getArchiveAllArticlesSortedPaginated(
+  date: string,
+  cursor?: string,
+  limit: number = DEFAULT_PAGE_SIZE,
+): Promise<PaginatedArticles> {
+  const snapshotItems = await prisma.dailySnapshotItem.findMany({
+    where: { snapshot: { date } },
+    select: { itemId: true },
+  });
+  const itemIds = snapshotItems.map((si) => si.itemId);
+  if (itemIds.length === 0) return { articles: [], nextCursor: null, hasMore: false };
+
+  const take = limit + 1;
+  const items = await prisma.item.findMany({
+    where: { id: { in: itemIds } },
+    orderBy: [{ importanceScore: "desc" }, { createdAt: "desc" }],
+    take,
+    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+    include: {
+      labels: true,
+      rawEvent: { include: { source: true } },
+      savedItems: { take: 1 },
+      readStatus: true,
+      itemEntities: { include: { entity: true } },
+    },
+  }) as ItemRow[];
+
+  const hasMore = items.length > limit;
+  const pageItems = hasMore ? items.slice(0, limit) : items;
+  const nextCursor = hasMore ? pageItems[pageItems.length - 1].id : null;
+
+  return {
+    articles: pageItems.map((item) => mapItemToArticle(item, absoluteTime)),
+    nextCursor,
+    hasMore,
+  };
 }
 
 export async function getArchiveTopStories(date: string, limit = 3): Promise<Article[]> {

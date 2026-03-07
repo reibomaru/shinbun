@@ -5,12 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArticleActions } from "@/components/ArticleActions";
 import { MarkAsRead } from "@/components/MarkAsRead";
+import { ReadLaterButton } from "./ReadLaterButton";
+import { ScoreBadge } from "@/components/ScoreBadge";
 import {
   ArrowLeft,
   ExternalLink,
-  Star,
   Lightbulb,
   FileText,
   Tag,
@@ -69,7 +69,7 @@ export default async function ArticleDetailPage({
             一覧へ
           </Button>
         </Link>
-        <ArticleActions itemId={article.id} isSaved={article.isSaved} />
+        <ReadLaterButton itemId={article.id} isSaved={article.isSaved} />
       </div>
 
       {/* Article header */}
@@ -86,9 +86,8 @@ export default async function ArticleDetailPage({
             <Badge variant="outline" className="text-xs">
               {article.language} → JA
             </Badge>
-            <div className="flex items-center gap-1 ml-auto">
-              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-              <span className="text-sm font-bold text-gray-700">{article.importanceScore}</span>
+            <div className="ml-auto">
+              <ScoreBadge score={article.importanceScore} />
             </div>
           </div>
 
@@ -133,12 +132,12 @@ export default async function ArticleDetailPage({
 
           {/* Why it matters */}
           {article.whyItMatters && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Lightbulb className="w-4 h-4 text-amber-500" />
-                <h2 className="text-sm font-bold text-amber-800">Why it matters</h2>
+                <Lightbulb className="w-4 h-4 text-gray-500" />
+                <h2 className="text-sm font-bold text-gray-700">Why it matters</h2>
               </div>
-              <p className="text-sm text-amber-900">{article.whyItMatters}</p>
+              <p className="text-sm text-gray-700">{article.whyItMatters}</p>
             </div>
           )}
         </CardContent>

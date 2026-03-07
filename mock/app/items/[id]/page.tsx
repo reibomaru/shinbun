@@ -7,15 +7,13 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
-  Bookmark,
-  ThumbsUp,
-  ThumbsDown,
+  Clock,
   ExternalLink,
-  Star,
-  Lightbulb,
   FileText,
+  Lightbulb,
   Tag,
 } from "lucide-react";
+import { ScoreBadge } from "@/components/ScoreBadge";
 
 const TOPIC_COLORS: Record<string, string> = {
   genai: "bg-purple-100 text-purple-700",
@@ -70,16 +68,8 @@ export default async function ArticleDetailPage({
         </Link>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="h-11 sm:h-9 text-xs flex-1 sm:flex-none">
-            <Bookmark className="w-3.5 h-3.5 mr-1" />
-            保存
-          </Button>
-          <Button variant="outline" size="sm" className="h-11 sm:h-9 text-xs flex-1 sm:flex-none">
-            <ThumbsUp className="w-3.5 h-3.5 mr-1" />
-            役立った
-          </Button>
-          <Button variant="outline" size="sm" className="h-11 sm:h-9 text-xs flex-1 sm:flex-none">
-            <ThumbsDown className="w-3.5 h-3.5 mr-1" />
-            不要
+            <Clock className="w-3.5 h-3.5 mr-1" />
+            あとで読む
           </Button>
         </div>
       </div>
@@ -98,9 +88,8 @@ export default async function ArticleDetailPage({
             <Badge variant="outline" className="text-xs">
               {article.language} → JA
             </Badge>
-            <div className="flex items-center gap-1 ml-auto">
-              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-              <span className="text-sm font-bold text-gray-700">{article.importanceScore}</span>
+            <div className="ml-auto">
+              <ScoreBadge score={article.importanceScore} />
             </div>
           </div>
 
@@ -142,12 +131,12 @@ export default async function ArticleDetailPage({
           </div>
 
           {/* Why it matters */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Lightbulb className="w-4 h-4 text-amber-500" />
-              <h2 className="text-sm font-bold text-amber-800">Why it matters</h2>
+              <Lightbulb className="w-4 h-4 text-gray-500" />
+              <h2 className="text-sm font-bold text-gray-600">Why it matters</h2>
             </div>
-            <p className="text-sm text-amber-900">{article.whyItMatters}</p>
+            <p className="text-sm text-gray-700">{article.whyItMatters}</p>
           </div>
         </CardContent>
       </Card>

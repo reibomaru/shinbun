@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Bookmark, LayoutDashboard, Archive, Menu, X } from "lucide-react";
+import { Search, Clock, LayoutDashboard, Archive, Menu, X } from "lucide-react";
 
 export function Header() {
   const pathname = usePathname();
@@ -62,8 +62,8 @@ export function Header() {
               size="sm"
               className="h-9 text-sm"
             >
-              <Bookmark className="w-4 h-4 mr-1" />
-              保存済み
+              <Clock className="w-4 h-4 mr-1" />
+              あとで読む
             </Button>
           </Link>
         </nav>
@@ -110,8 +110,8 @@ export function Header() {
                 variant={pathname === "/saved" ? "secondary" : "ghost"}
                 className="w-full justify-start h-11 text-sm"
               >
-                <Bookmark className="w-4 h-4 mr-2" />
-                保存済み
+                <Clock className="w-4 h-4 mr-2" />
+                あとで読む
               </Button>
             </Link>
           </nav>
