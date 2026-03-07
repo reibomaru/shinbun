@@ -1,33 +1,22 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Clock, Check } from "lucide-react";
-import { toggleSave } from "@/lib/actions";
 import { toast } from "sonner";
 
-interface ReadLaterButtonProps {
-  itemId: string;
-  isSaved: boolean;
-}
-
-export function ReadLaterButton({ itemId, isSaved: initialSaved }: ReadLaterButtonProps) {
-  const [isSaved, setIsSaved] = useState(initialSaved);
-  const [isPending, startTransition] = useTransition();
+export function ReadLaterButton() {
+  const [isSaved, setIsSaved] = useState(false);
 
   return (
     <Button
       variant="ghost"
       size="sm"
       className={`h-11 sm:h-9 px-3 text-xs ${isSaved ? "text-blue-600" : "text-gray-500 hover:text-blue-600"}`}
-      disabled={isPending}
       onClick={() => {
         const newSaved = !isSaved;
         setIsSaved(newSaved);
-        startTransition(async () => {
-          await toggleSave(itemId);
-          toast.success(newSaved ? "あとで読むリストに保存しました" : "あとで読むリストから削除しました");
-        });
+        toast.success(newSaved ? "あとで読むリストに保存しました" : "あとで読むリストから削除しました");
       }}
     >
       {isSaved ? (

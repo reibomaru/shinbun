@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { Article } from "@/lib/types";
 import { Clock, ChevronDown, ChevronUp, Check } from "lucide-react";
 import { toggleSave } from "@/lib/actions";
+import { toast } from "sonner";
 import { ScoreBadge } from "@/components/ScoreBadge";
 
 const TOPIC_COLORS: Record<string, string> = {
@@ -55,8 +56,12 @@ export function ArticleCard({ article, compact = false, expanded = false }: Arti
 
   const handleToggleSave = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsSaved(!isSaved);
-    startTransition(() => toggleSave(article.id));
+    const newSaved = !isSaved;
+    setIsSaved(newSaved);
+    startTransition(async () => {
+      await toggleSave(article.id);
+      toast.success(newSaved ? "あとで読むリストに保存しました" : "あとで読むリストから削除しました");
+    });
   };
 
   return (

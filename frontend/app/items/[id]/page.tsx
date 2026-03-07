@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { MarkAsRead } from "@/components/MarkAsRead";
 import { ReadLaterButton } from "./ReadLaterButton";
+import { FeedbackButtons } from "./FeedbackButtons";
 import { ScoreBadge } from "@/components/ScoreBadge";
 import {
   ArrowLeft,
@@ -69,7 +70,10 @@ export default async function ArticleDetailPage({
             一覧へ
           </Button>
         </Link>
-        <ReadLaterButton itemId={article.id} isSaved={article.isSaved} />
+        <div className="flex items-center gap-1">
+          <ReadLaterButton itemId={article.id} isSaved={article.isSaved} />
+          <FeedbackButtons itemId={article.id} />
+        </div>
       </div>
 
       {/* Article header */}

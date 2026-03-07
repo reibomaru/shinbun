@@ -2,18 +2,19 @@ import { ARTICLES } from "@/lib/mock-data";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
-  Clock,
   ExternalLink,
   FileText,
   Lightbulb,
   Tag,
 } from "lucide-react";
 import { ScoreBadge } from "@/components/ScoreBadge";
+import { Button } from "@/components/ui/button";
+import { ReadLaterButton } from "./ReadLaterButton";
+import { FeedbackButtons } from "./FeedbackButtons";
 
 const TOPIC_COLORS: Record<string, string> = {
   genai: "bg-purple-100 text-purple-700",
@@ -66,11 +67,9 @@ export default async function ArticleDetailPage({
             一覧へ
           </Button>
         </Link>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-11 sm:h-9 text-xs flex-1 sm:flex-none">
-            <Clock className="w-3.5 h-3.5 mr-1" />
-            あとで読む
-          </Button>
+        <div className="flex items-center gap-1">
+          <ReadLaterButton />
+          <FeedbackButtons />
         </div>
       </div>
 
