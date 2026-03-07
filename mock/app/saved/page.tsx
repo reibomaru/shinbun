@@ -2,7 +2,7 @@ import { SAVED_ARTICLES } from "@/lib/mock-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bookmark, Tag, Trash2, Download, ChevronDown } from "lucide-react";
+import { Clock, Tag, Trash2, Download, ChevronDown } from "lucide-react";
 import Link from "next/link";
 
 export default function SavedPage() {
@@ -13,8 +13,8 @@ export default function SavedPage() {
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-2">
-          <Bookmark className="w-5 h-5 text-gray-700" />
-          <h1 className="text-lg font-bold text-gray-900">保存済み記事</h1>
+          <Clock className="w-5 h-5 text-gray-700" />
+          <h1 className="text-lg font-bold text-gray-900">あとで読む</h1>
           <span className="text-sm text-gray-500">({totalCount}件)</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -117,9 +117,9 @@ export default function SavedPage() {
       {/* Empty state (hidden when articles exist) */}
       {SAVED_ARTICLES.length === 0 && (
         <div className="text-center py-16 text-gray-400">
-          <Bookmark className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="text-sm">保存済み記事がありません</p>
-          <p className="text-xs mt-1">記事カードの「保存」ボタンから追加できます</p>
+          <Clock className="w-12 h-12 mx-auto mb-4 opacity-30" />
+          <p className="text-sm">あとで読む記事がありません</p>
+          <p className="text-xs mt-1">記事カードの「あとで読む」ボタンから追加できます</p>
         </div>
       )}
     </div>

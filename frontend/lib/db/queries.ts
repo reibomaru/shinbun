@@ -65,9 +65,12 @@ function absoluteTime(date: Date | null | undefined): string {
 type ItemRow = Awaited<ReturnType<typeof queryItems>>[number];
 
 async function queryItems(where: object = {}, orderBy: object = {}, limit?: number) {
+  const orderByArray = Object.keys(orderBy).length > 0
+    ? [...Object.entries(orderBy).map(([k, v]) => ({ [k]: v })), { createdAt: "desc" as const }]
+    : [{ createdAt: "desc" as const }];
   return prisma.item.findMany({
     where: { status: "processed", ...where },
-    orderBy: { createdAt: "desc", ...orderBy },
+    orderBy: orderByArray,
     take: limit,
     include: {
       labels: true,
@@ -98,7 +101,7 @@ function mapItemToArticle(
     source: extractSourceName(item.url, item.rawEvent.source.name, item.rawEvent.source.type),
     publishedAt: timeFormatter(item.publishedAt),
     language: (item.language === "JA" ? "JA" : "EN") as "EN" | "JA",
-    importanceScore: item.importanceScore ?? 0,
+    importanceScore: Math.round((item.importanceScore ?? 0) * 100),
     isRead: item.readStatus !== null,
     isSaved: item.savedItems.length > 0,
     isUrgent: item.isUrgent,
@@ -203,6 +206,11 @@ export async function getCategoryCounts(): Promise<CategoryCounts> {
   return counts;
 }
 
+export async function getAllArticlesSorted(limit?: number): Promise<Article[]> {
+  const items = await queryItems({}, { importanceScore: "desc" }, limit);
+  return items.map((item: ItemRow) => mapItemToArticle(item));
+}
+
 // ─── Archive query functions ─────────────────────────
 
 const DAY_OF_WEEK_JA = ["日", "月", "火", "水", "木", "金", "土"];
@@ -248,9 +256,12 @@ async function querySnapshotItems(
   const itemIds = snapshotItems.map((si) => si.itemId);
   if (itemIds.length === 0) return [];
 
+  const orderByArray = orderBy
+    ? Object.entries(orderBy).map(([k, v]) => ({ [k]: v }))
+    : [{ createdAt: "desc" as const }];
   return prisma.item.findMany({
     where: { id: { in: itemIds }, ...where },
-    orderBy: orderBy ?? { createdAt: "desc" },
+    orderBy: orderByArray,
     take: limit,
     include: {
       labels: true,
@@ -260,6 +271,11 @@ async function querySnapshotItems(
       itemEntities: { include: { entity: true } },
     },
   }) as Promise<ItemRow[]>;
+}
+
+export async function getArchiveAllArticlesSorted(date: string): Promise<Article[]> {
+  const items = await querySnapshotItems(date, {}, { importanceScore: "desc" });
+  return items.map((item: ItemRow) => mapItemToArticle(item, absoluteTime));
 }
 
 export async function getArchiveTopStories(date: string, limit = 3): Promise<Article[]> {
