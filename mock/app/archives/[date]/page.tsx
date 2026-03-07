@@ -49,14 +49,12 @@ export default async function ArchiveDatePage({ params }: ArchiveDatePageProps) 
       </div>
 
       {/* Category counts */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 ml-auto text-xs text-gray-500">
-          {Object.entries(CATEGORY_COUNTS).map(([cat, count]) => (
-            <span key={cat}>
-              <span className="font-medium text-gray-700">{cat}</span>: {count}件
-            </span>
-          ))}
-        </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+        {Object.entries(CATEGORY_COUNTS).map(([cat, count]) => (
+          <span key={cat}>
+            <span className="font-medium text-gray-700">{cat}</span>: {count}件
+          </span>
+        ))}
       </div>
 
       {/* Main 2-column layout (same as dashboard) */}
@@ -142,7 +140,7 @@ export default async function ArchiveDatePage({ params }: ArchiveDatePageProps) 
 
         {/* Right column: Releases */}
         <aside className="flex flex-col gap-4">
-          <Card className="sticky top-20">
+          <Card className="lg:sticky lg:top-20">
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="flex items-center gap-2 text-sm font-bold text-gray-700 uppercase tracking-wide">
                 <Package className="w-4 h-4 text-gray-500" />

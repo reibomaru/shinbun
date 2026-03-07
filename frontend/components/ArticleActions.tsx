@@ -18,39 +18,39 @@ export function ArticleActions({ itemId, isSaved }: ArticleActionsProps) {
       <Button
         variant="ghost"
         size="sm"
-        className={`h-7 px-2 text-xs ${isSaved ? "text-blue-600" : "text-gray-500 hover:text-blue-600"}`}
+        className={`h-11 sm:h-8 px-3 sm:px-2 text-xs ${isSaved ? "text-blue-600" : "text-gray-500 hover:text-blue-600"}`}
         disabled={isPending}
         onClick={() => startTransition(() => toggleSave(itemId))}
       >
         {isSaved ? (
-          <BookmarkCheck className="w-3 h-3 mr-1" />
+          <BookmarkCheck className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-1" />
         ) : (
-          <Bookmark className="w-3 h-3 mr-1" />
+          <Bookmark className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-1" />
         )}
         {isSaved ? "保存済み" : "保存"}
       </Button>
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 px-2 text-xs text-gray-500 hover:text-green-600"
+        className="h-11 sm:h-8 px-3 sm:px-2 text-xs text-gray-500 hover:text-green-600"
         disabled={isPending}
         onClick={() =>
           startTransition(() => submitFeedback(itemId, "helpful"))
         }
       >
-        <ThumbsUp className="w-3 h-3 mr-1" />
+        <ThumbsUp className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-1" />
         役立った
       </Button>
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 px-2 text-xs text-gray-500 hover:text-red-500"
+        className="h-11 sm:h-8 px-3 sm:px-2 text-xs text-gray-500 hover:text-red-500"
         disabled={isPending}
         onClick={() =>
           startTransition(() => submitFeedback(itemId, "not_helpful"))
         }
       >
-        <ThumbsDown className="w-3 h-3 mr-1" />
+        <ThumbsDown className="w-3.5 h-3.5 sm:w-3 sm:h-3 mr-1" />
         不要
       </Button>
     </div>

@@ -61,23 +61,23 @@ export default async function ArticleDetailPage({
   return (
     <div className="max-w-3xl mx-auto">
       {/* Back nav + Actions */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <Link href="/">
-          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900">
+          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900 h-11 sm:h-9">
             <ArrowLeft className="w-4 h-4 mr-1" />
             一覧へ
           </Button>
         </Link>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="h-8 text-xs">
+          <Button variant="outline" size="sm" className="h-11 sm:h-9 text-xs flex-1 sm:flex-none">
             <Bookmark className="w-3.5 h-3.5 mr-1" />
             保存
           </Button>
-          <Button variant="outline" size="sm" className="h-8 text-xs">
+          <Button variant="outline" size="sm" className="h-11 sm:h-9 text-xs flex-1 sm:flex-none">
             <ThumbsUp className="w-3.5 h-3.5 mr-1" />
             役立った
           </Button>
-          <Button variant="outline" size="sm" className="h-8 text-xs">
+          <Button variant="outline" size="sm" className="h-11 sm:h-9 text-xs flex-1 sm:flex-none">
             <ThumbsDown className="w-3.5 h-3.5 mr-1" />
             不要
           </Button>
