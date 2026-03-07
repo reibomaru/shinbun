@@ -65,7 +65,7 @@ export default function DashboardPage() {
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <ArticleCard article={article} />
+                    <ArticleCard article={article} expanded />
                   </div>
                 </div>
               ))}
@@ -86,7 +86,7 @@ export default function DashboardPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {genaiArticles.map((article) => (
-                <ArticleCard key={article.id} article={article} compact />
+                <ArticleCard key={article.id} article={article} expanded />
               ))}
             </div>
           </section>
@@ -105,7 +105,7 @@ export default function DashboardPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {frontendArticles.map((article) => (
-                <ArticleCard key={article.id} article={article} compact />
+                <ArticleCard key={article.id} article={article} expanded />
               ))}
             </div>
           </section>
@@ -124,7 +124,7 @@ export default function DashboardPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {backendArticles.map((article) => (
-                <ArticleCard key={article.id} article={article} compact />
+                <ArticleCard key={article.id} article={article} expanded />
               ))}
             </div>
           </section>
