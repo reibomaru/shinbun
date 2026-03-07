@@ -1,5 +1,6 @@
 packages:
   - "mock"
+  - "frontend"
 
 onlyBuiltDependencies:
   - "@prisma/client"
