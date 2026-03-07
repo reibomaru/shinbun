@@ -87,7 +87,7 @@
 | importance_score | FLOAT | 重要度スコア（0-100） |
 | importance_reason | TEXT | スコア算出理由 |
 | is_urgent | BOOLEAN | 緊急アラート対象か |
-| status | ENUM | `pending / processed / archived / llm_error` |
+| status | ENUM | `pending / processed / llm_error` |
 | llm_model_used | TEXT | 処理に使用したモデル名 |
 | llm_cost | FLOAT | 処理コスト（USD） |
 | created_at | TIMESTAMP | 作成日時 |
@@ -161,6 +161,30 @@
 | feedback_type | ENUM | `helpful / not_helpful` |
 | created_at | TIMESTAMP | 作成日時 |
 
+#### daily_snapshot
+日次ダッシュボードのスナップショット。アーカイブ（バックナンバー）として使用。
+
+| カラム | 型 | 説明 |
+|---|---|---|
+| id | TEXT (CUID) | PK |
+| date | TEXT | スナップショット日付（`YYYY-MM-DD`、JST基準）。UNIQUE |
+| article_count | INTEGER | スナップショット時の記事件数 |
+| top_title | TEXT | 最重要記事のタイトル |
+| created_at | TIMESTAMP | 作成日時 |
+
+#### daily_snapshot_item
+スナップショットとアイテムの中間テーブル。
+
+| カラム | 型 | 説明 |
+|---|---|---|
+| id | TEXT (CUID) | PK |
+| snapshot_id | TEXT | FK → daily_snapshot |
+| item_id | UUID | FK → item |
+
+UNIQUE制約: `(snapshot_id, item_id)`
+
+> **設計方針:** アーカイブは `item.status` を変更せず、`daily_snapshot` + `daily_snapshot_item` によるスナップショット方式で実現する。`item.status` は `processed` のまま維持されるため、アーカイブ後もダッシュボードに記事が表示され続ける。スナップショットはその日に作成された `processed` アイテムのみを対象とする。
+
 #### embedding
 ベクトル埋め込み（Phase 2〜）。90日保持後削除。
 
@@ -181,7 +205,8 @@ source ──< raw_event ──< item >──< item_label
                           ├──< saved_item
                           ├──  read_status
                           ├──< feedback
-                          └──  embedding
+                          ├──  embedding
+                          └──< daily_snapshot_item >── daily_snapshot
 
 watchlist（独立テーブル。entity.idまたはキーワードを参照）
 ```
