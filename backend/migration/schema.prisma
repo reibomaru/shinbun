@@ -98,13 +98,14 @@ model Item {
   llmCost          Float?     @map("llm_cost")
   createdAt        DateTime   @default(now()) @map("created_at")
 
-  rawEvent    RawEvent     @relation(fields: [rawEventId], references: [id])
-  labels      ItemLabel[]
-  itemEntities ItemEntity[]
-  savedItems  SavedItem[]
-  readStatus  ReadStatus?
-  feedbacks   Feedback[]
-  embeddings  Embedding[]
+  rawEvent           RawEvent            @relation(fields: [rawEventId], references: [id])
+  labels             ItemLabel[]
+  itemEntities       ItemEntity[]
+  savedItems         SavedItem[]
+  readStatus         ReadStatus?
+  feedbacks          Feedback[]
+  embeddings         Embedding[]
+  dailySnapshotItems DailySnapshotItem[]
 
   @@map("item")
 }
@@ -185,6 +186,28 @@ model Feedback {
   item Item @relation(fields: [itemId], references: [id])
 
   @@map("feedback")
+}
+
+model DailySnapshot {
+  id           String              @id @default(cuid())
+  date         String              @unique
+  articleCount Int                 @map("article_count")
+  topTitle     String              @map("top_title")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  items        DailySnapshotItem[]
+
+  @@map("daily_snapshot")
+}
+
+model DailySnapshotItem {
+  id         String        @id @default(cuid())
+  snapshotId String        @map("snapshot_id")
+  itemId     String        @map("item_id") @db.Uuid
+  snapshot   DailySnapshot @relation(fields: [snapshotId], references: [id])
+  item       Item          @relation(fields: [itemId], references: [id])
+
+  @@unique([snapshotId, itemId])
+  @@map("daily_snapshot_item")
 }
 
 model Embedding {

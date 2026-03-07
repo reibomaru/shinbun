@@ -1,6 +1,7 @@
 import { prisma } from "./client";
 import type {
   Article,
+  ArchiveDay,
   Topic,
   Format,
   Release,
@@ -51,6 +52,16 @@ function relativeTime(date: Date | null | undefined): string {
   return `${diffDay}日前`;
 }
 
+function absoluteTime(date: Date | null | undefined): string {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const h = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${y}/${m}/${d} ${h}:${min}`;
+}
+
 type ItemRow = Awaited<ReturnType<typeof queryItems>>[number];
 
 async function queryItems(where: object = {}, orderBy: object = {}, limit?: number) {
@@ -68,7 +79,10 @@ async function queryItems(where: object = {}, orderBy: object = {}, limit?: numb
   });
 }
 
-function mapItemToArticle(item: ItemRow): Article {
+function mapItemToArticle(
+  item: ItemRow,
+  timeFormatter: (d: Date | null | undefined) => string = relativeTime,
+): Article {
   const topic = extractLabel(item.labels, "topic", TOPIC_VALUES, "genai") as Topic;
   const format = extractLabel(item.labels, "format", FORMAT_VALUES, "announcement") as Format;
 
@@ -82,14 +96,14 @@ function mapItemToArticle(item: ItemRow): Article {
     topic,
     format,
     source: extractSourceName(item.url, item.rawEvent.source.name, item.rawEvent.source.type),
-    publishedAt: relativeTime(item.publishedAt),
+    publishedAt: timeFormatter(item.publishedAt),
     language: (item.language === "JA" ? "JA" : "EN") as "EN" | "JA",
     importanceScore: item.importanceScore ?? 0,
     isRead: item.readStatus !== null,
     isSaved: item.savedItems.length > 0,
     isUrgent: item.isUrgent,
     url: item.url,
-    entities: item.itemEntities.map((ie) => ie.entity.name),
+    entities: item.itemEntities.map((ie: { entity: { name: string } }) => ie.entity.name),
     relatedArticles: [],
   };
 }
@@ -104,7 +118,7 @@ export async function getArticles(
     where.labels = { some: { labelType: "topic", labelValue: opts.topic } };
   }
   const items = await queryItems(where, {}, opts.limit);
-  return items.map(mapItemToArticle);
+  return items.map((item) => mapItemToArticle(item));
 }
 
 export async function getTopStories(limit = 3): Promise<Article[]> {
@@ -120,12 +134,12 @@ export async function getTopStories(limit = 3): Promise<Article[]> {
       itemEntities: { include: { entity: true } },
     },
   });
-  return items.map(mapItemToArticle);
+  return items.map((item) => mapItemToArticle(item));
 }
 
 export async function getUrgentArticles(): Promise<Article[]> {
   const items = await queryItems({ isUrgent: true });
-  return items.map(mapItemToArticle);
+  return items.map((item) => mapItemToArticle(item));
 }
 
 export async function getArticleById(id: string): Promise<Article | null> {
@@ -155,7 +169,7 @@ export async function getReleases(limit = 5): Promise<Release[]> {
       rawEvent: { include: { source: true } },
     },
   });
-  return items.map((item) => ({
+  return items.map((item: { title: string; url: string; rawEvent: { source: { name: string; type: string } }; publishedAt: Date | null; importanceScore: number | null }) => ({
     name: item.title,
     source: extractSourceName(item.url, item.rawEvent.source.name, item.rawEvent.source.type),
     publishedAt: relativeTime(item.publishedAt),
@@ -187,6 +201,157 @@ export async function getCategoryCounts(): Promise<CategoryCounts> {
     counts[display] = row._count.labelValue;
   }
   return counts;
+}
+
+// ─── Archive query functions ─────────────────────────
+
+const DAY_OF_WEEK_JA = ["日", "月", "火", "水", "木", "金", "土"];
+
+function jstDayOfWeek(dateStr: string): string {
+  const date = new Date(`${dateStr}T00:00:00+09:00`);
+  return DAY_OF_WEEK_JA[date.getDay()];
+}
+
+export async function getArchiveDates(): Promise<ArchiveDay[]> {
+  const snapshots = await prisma.dailySnapshot.findMany({
+    orderBy: { date: "desc" },
+    select: {
+      date: true,
+      articleCount: true,
+      topTitle: true,
+      items: {
+        select: { item: { select: { title: true, importanceScore: true } } },
+        orderBy: { item: { importanceScore: "desc" } },
+      },
+    },
+  });
+
+  return snapshots.map((s) => ({
+    date: s.date,
+    dayOfWeek: jstDayOfWeek(s.date),
+    articleCount: s.articleCount,
+    topTitle: s.topTitle,
+    titles: s.items.map((si) => si.item.title),
+  }));
+}
+
+async function querySnapshotItems(
+  date: string,
+  where: object = {},
+  orderBy?: object,
+  limit?: number,
+): Promise<ItemRow[]> {
+  const snapshotItems = await prisma.dailySnapshotItem.findMany({
+    where: { snapshot: { date } },
+    select: { itemId: true },
+  });
+  const itemIds = snapshotItems.map((si) => si.itemId);
+  if (itemIds.length === 0) return [];
+
+  return prisma.item.findMany({
+    where: { id: { in: itemIds }, ...where },
+    orderBy: orderBy ?? { createdAt: "desc" },
+    take: limit,
+    include: {
+      labels: true,
+      rawEvent: { include: { source: true } },
+      savedItems: { take: 1 },
+      readStatus: true,
+      itemEntities: { include: { entity: true } },
+    },
+  }) as Promise<ItemRow[]>;
+}
+
+export async function getArchiveTopStories(date: string, limit = 3): Promise<Article[]> {
+  const items = await querySnapshotItems(
+    date,
+    {},
+    { importanceScore: "desc" },
+    limit,
+  );
+  return items.map((item) => mapItemToArticle(item, absoluteTime));
+}
+
+export async function getArchiveArticles(
+  date: string,
+  opts: { topic?: string; limit?: number } = {},
+): Promise<Article[]> {
+  const where: Record<string, unknown> = {};
+  if (opts.topic) {
+    where.labels = { some: { labelType: "topic", labelValue: opts.topic } };
+  }
+  const items = await querySnapshotItems(date, where, undefined, opts.limit);
+  return items.map((item) => mapItemToArticle(item, absoluteTime));
+}
+
+export async function getArchiveReleases(date: string, limit = 5): Promise<Release[]> {
+  const items = await querySnapshotItems(
+    date,
+    { labels: { some: { labelType: "format", labelValue: "release" } } },
+    { publishedAt: "desc" },
+    limit,
+  );
+  return items.map((item) => ({
+    name: item.title,
+    source: extractSourceName(item.url, item.rawEvent.source.name, item.rawEvent.source.type),
+    publishedAt: absoluteTime(item.publishedAt),
+    score: item.importanceScore ?? 0,
+  }));
+}
+
+export async function getArchiveCategoryCounts(date: string): Promise<CategoryCounts> {
+  const snapshotItems = await prisma.dailySnapshotItem.findMany({
+    where: { snapshot: { date } },
+    select: { itemId: true },
+  });
+  const itemIds = snapshotItems.map((si) => si.itemId);
+  if (itemIds.length === 0) return {};
+
+  const labels = await prisma.itemLabel.groupBy({
+    by: ["labelValue"],
+    where: {
+      labelType: "topic",
+      itemId: { in: itemIds },
+    },
+    _count: { labelValue: true },
+  });
+
+  const TOPIC_DISPLAY: Record<string, string> = {
+    genai: "GenAI",
+    frontend: "Frontend",
+    backend: "Backend",
+    devtools: "Tools",
+    security: "Security",
+  };
+
+  const counts: CategoryCounts = {};
+  for (const row of labels) {
+    const display = TOPIC_DISPLAY[row.labelValue] ?? row.labelValue;
+    counts[display] = row._count.labelValue;
+  }
+  return counts;
+}
+
+export async function getAdjacentArchiveDates(
+  date: string,
+): Promise<{ prev: string | null; next: string | null }> {
+  const [prev, next] = await Promise.all([
+    prisma.dailySnapshot.findFirst({
+      where: { date: { lt: date } },
+      orderBy: { date: "desc" },
+      select: { date: true },
+    }),
+    prisma.dailySnapshot.findFirst({
+      where: { date: { gt: date } },
+      orderBy: { date: "asc" },
+      select: { date: true },
+    }),
+  ]);
+
+  return {
+    prev: prev?.date ?? null,
+    next: next?.date ?? null,
+  };
 }
 
 export async function getSavedArticles(): Promise<SavedGroup[]> {

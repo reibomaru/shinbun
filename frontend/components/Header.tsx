@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Bookmark, LayoutDashboard, Menu, X } from "lucide-react";
+import { Search, Bookmark, LayoutDashboard, Newspaper, Menu, X } from "lucide-react";
 
 export function Header() {
   const pathname = usePathname();
@@ -43,6 +43,16 @@ export function Header() {
             >
               <LayoutDashboard className="w-4 h-4 mr-1" />
               ダッシュボード
+            </Button>
+          </Link>
+          <Link href="/archives">
+            <Button
+              variant={pathname.startsWith("/archives") ? "secondary" : "ghost"}
+              size="sm"
+              className="h-9 text-sm"
+            >
+              <Newspaper className="w-4 h-4 mr-1" />
+              バックナンバー
             </Button>
           </Link>
           <Link href="/saved">
@@ -85,6 +95,15 @@ export function Header() {
               >
                 <LayoutDashboard className="w-4 h-4 mr-2" />
                 ダッシュボード
+              </Button>
+            </Link>
+            <Link href="/archives" onClick={() => setMobileMenuOpen(false)}>
+              <Button
+                variant={pathname.startsWith("/archives") ? "secondary" : "ghost"}
+                className="w-full justify-start h-11 text-sm"
+              >
+                <Newspaper className="w-4 h-4 mr-2" />
+                バックナンバー
               </Button>
             </Link>
             <Link href="/saved" onClick={() => setMobileMenuOpen(false)}>
