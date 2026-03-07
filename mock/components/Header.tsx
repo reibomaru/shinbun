@@ -31,6 +31,7 @@ export function Header() {
             <span className="hidden sm:inline">📰 AI Tech Daily</span>
             <span className="sm:hidden">📰</span>
           </span>
+          <span className="text-xs font-bold text-white bg-orange-500 rounded px-1.5 py-0.5 uppercase tracking-wider">Mock</span>
         </Link>
 
         {/* Nav (desktop) */}

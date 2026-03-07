@@ -42,10 +42,11 @@ const FORMAT_LABELS: Record<string, string> = {
 interface ArticleCardProps {
   article: Article;
   compact?: boolean;
+  expanded?: boolean;
   useAbsoluteTime?: boolean;
 }
 
-export function ArticleCard({ article, compact = false, useAbsoluteTime = false }: ArticleCardProps) {
+export function ArticleCard({ article, compact = false, expanded = false, useAbsoluteTime = false }: ArticleCardProps) {
   return (
     <Link href={`/items/${article.id}`}>
       <Card
@@ -72,8 +73,30 @@ export function ArticleCard({ article, compact = false, useAbsoluteTime = false 
             {article.title}
           </h3>
 
-          {/* Summary */}
-          {!compact && (
+          {/* Summary - expanded: full summary + key points, normal: short summary, compact: short summary */}
+          {expanded ? (
+            <div className="mt-2 space-y-3">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {article.summaryMedium}
+              </p>
+              {article.keyPoints.length > 0 && (
+                <ul className="space-y-1">
+                  {article.keyPoints.map((point, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                      <span className="text-gray-400 mt-0.5 shrink-0">•</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {article.whyItMatters && (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <p className="text-xs font-semibold text-amber-800 mb-1">Why it matters</p>
+                  <p className="text-sm text-amber-900">{article.whyItMatters}</p>
+                </div>
+              )}
+            </div>
+          ) : (
             <p className="text-sm text-gray-600 leading-relaxed mb-2 line-clamp-2">
               {article.summaryShort}
             </p>
