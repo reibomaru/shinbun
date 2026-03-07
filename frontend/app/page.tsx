@@ -2,18 +2,19 @@ export const dynamic = "force-dynamic";
 
 import {
   getUrgentArticles,
-  getAllArticlesSorted,
+  getAllArticlesSortedPaginated,
   getCategoryCounts,
 } from "@/lib/db/queries";
-import { MasonryGrid } from "@/components/MasonryGrid";
+import { InfiniteScrollMasonryGrid } from "@/components/InfiniteScrollMasonryGrid";
 import { UrgentAlertBanner } from "@/components/UrgentAlertBanner";
 import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
+import { loadMoreArticles } from "@/lib/actions";
 
 export default async function DashboardPage() {
-  const [urgentArticles, allArticles, counts] = await Promise.all([
+  const [urgentArticles, paginated, counts] = await Promise.all([
     getUrgentArticles(),
-    getAllArticlesSorted(),
+    getAllArticlesSortedPaginated(),
     getCategoryCounts(),
   ]);
 
@@ -37,8 +38,13 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Masonry newspaper layout - sorted by importance score */}
-      <MasonryGrid articles={allArticles} />
+      {/* Masonry newspaper layout - sorted by importance score with infinite scroll */}
+      <InfiniteScrollMasonryGrid
+        initialArticles={paginated.articles}
+        initialCursor={paginated.nextCursor}
+        initialHasMore={paginated.hasMore}
+        loadMore={loadMoreArticles}
+      />
     </div>
   );
 }

@@ -1,14 +1,15 @@
 import {
   getArchiveDates,
-  getArchiveAllArticlesSorted,
+  getArchiveAllArticlesSortedPaginated,
   getArchiveCategoryCounts,
   getAdjacentArchiveDates,
 } from "@/lib/db/queries";
-import { MasonryGrid } from "@/components/MasonryGrid";
+import { InfiniteScrollMasonryGrid } from "@/components/InfiniteScrollMasonryGrid";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { loadMoreArchiveArticles } from "@/lib/actions";
 
 export async function generateStaticParams() {
   const days = await getArchiveDates();
@@ -24,8 +25,8 @@ export default async function ArchiveDatePage({ params }: ArchiveDatePageProps) 
 
   const [year, month, day] = date.split("-").map(Number);
 
-  const [allArticles, counts, adjacent] = await Promise.all([
-    getArchiveAllArticlesSorted(date),
+  const [paginated, counts, adjacent] = await Promise.all([
+    getArchiveAllArticlesSortedPaginated(date),
     getArchiveCategoryCounts(date),
     getAdjacentArchiveDates(date),
   ]);
@@ -34,6 +35,11 @@ export default async function ArchiveDatePage({ params }: ArchiveDatePageProps) 
     const d = new Date(`${date}T00:00:00+09:00`);
     return ["日", "月", "火", "水", "木", "金", "土"][d.getDay()];
   })();
+
+  const boundLoadMore = async (cursor: string) => {
+    "use server";
+    return loadMoreArchiveArticles(date, cursor);
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -59,8 +65,13 @@ export default async function ArchiveDatePage({ params }: ArchiveDatePageProps) 
         ))}
       </div>
 
-      {/* Masonry layout - sorted by importance score */}
-      <MasonryGrid articles={allArticles} />
+      {/* Masonry layout - sorted by importance score with infinite scroll */}
+      <InfiniteScrollMasonryGrid
+        initialArticles={paginated.articles}
+        initialCursor={paginated.nextCursor}
+        initialHasMore={paginated.hasMore}
+        loadMore={boundLoadMore}
+      />
 
       {/* Pagination */}
       <Separator />

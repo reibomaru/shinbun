@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { Article } from "@/lib/types";
+import { getVisibleAlerts, dismissArticle, isSafeUrl } from "./urgent-alert-helpers";
 
 const TOPIC_LABELS: Record<string, string> = {
   genai: "GenAI",
@@ -34,11 +35,11 @@ export function UrgentAlertBanner({ articles }: { articles: Article[] }) {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
 
-  const visibleAlerts = articles.filter((a) => !dismissedIds.has(a.id));
+  const visibleAlerts = getVisibleAlerts(articles, dismissedIds);
 
   const handleAcknowledge = () => {
     if (selectedArticle) {
-      setDismissedIds((prev) => new Set(prev).add(selectedArticle.id));
+      setDismissedIds((prev) => dismissArticle(prev, selectedArticle.id));
       setSelectedArticle(null);
     }
   };
@@ -143,17 +144,19 @@ export function UrgentAlertBanner({ articles }: { articles: Article[] }) {
             </div>
 
             <DialogFooter className="flex-col sm:flex-row gap-2 mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                asChild
-              >
-                <a href={selectedArticle.url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  原文を読む
-                </a>
-              </Button>
+              {isSafeUrl(selectedArticle.url) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  asChild
+                >
+                  <a href={selectedArticle.url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    原文を読む
+                  </a>
+                </Button>
+              )}
               <Button
                 size="sm"
                 className="gap-1.5 bg-red-600 hover:bg-red-700 text-white"

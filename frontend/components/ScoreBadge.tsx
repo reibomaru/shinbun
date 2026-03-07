@@ -7,6 +7,7 @@ interface ScoreBadgeProps {
 }
 
 export function ScoreBadge({ score }: ScoreBadgeProps) {
+  const clampedScore = Math.max(0, Math.min(100, score));
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -14,15 +15,15 @@ export function ScoreBadge({ score }: ScoreBadgeProps) {
           <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full ${
-                score >= 80
+                clampedScore >= 80
                   ? "bg-orange-500"
-                  : score >= 60
+                  : clampedScore >= 60
                     ? "bg-blue-500"
-                    : score >= 40
+                    : clampedScore >= 40
                       ? "bg-blue-400"
                       : "bg-gray-400"
               }`}
-              style={{ width: `${score}%` }}
+              style={{ width: `${clampedScore}%` }}
             />
           </div>
           <span className="text-sm font-bold text-gray-500">{score}</span>

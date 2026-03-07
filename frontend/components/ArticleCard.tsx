@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Article } from "@/lib/types";
 import { Clock, ChevronDown, ChevronUp, Check } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toggleSave } from "@/lib/actions";
+import { ScoreBadge } from "@/components/ScoreBadge";
 
 const TOPIC_COLORS: Record<string, string> = {
   genai: "bg-purple-100 text-purple-700",
@@ -158,36 +158,7 @@ export function ArticleCard({ article, compact = false, expanded = false }: Arti
             <span>·</span>
             <span>{article.publishedAt}</span>
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-1.5 cursor-help">
-                <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${
-                      article.importanceScore >= 80
-                        ? "bg-orange-500"
-                        : article.importanceScore >= 60
-                          ? "bg-blue-500"
-                          : article.importanceScore >= 40
-                            ? "bg-blue-400"
-                            : "bg-gray-400"
-                    }`}
-                    style={{ width: `${article.importanceScore}%` }}
-                  />
-                </div>
-                <span className="text-xs font-medium text-gray-500">{article.importanceScore}</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs">
-              <p className="font-semibold text-xs mb-1.5">重要度スコア（0-100）</p>
-              <ul className="text-xs space-y-0.5">
-                <li>ソース信頼度: 30%</li>
-                <li>コンテンツ品質（LLM評価）: 30%</li>
-                <li>鮮度: 20%</li>
-                <li>エンゲージメント: 20%</li>
-              </ul>
-            </TooltipContent>
-          </Tooltip>
+          <ScoreBadge score={article.importanceScore} />
         </div>
 
       </CardContent>
