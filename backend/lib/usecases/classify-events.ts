@@ -37,8 +37,8 @@ export async function classifyEvents(
 
   // ClassifyInput に変換
   const classifyInputs: ClassifyInput[] = unprocessed.map((re) => ({
-    title: String((re.payload as Record<string, unknown>)._title ?? ""),
-    url: String((re.payload as Record<string, unknown>)._url ?? ""),
+    title: re.title ?? "",
+    url: re.url ?? "",
     hnScore: Number((re.payload as Record<string, unknown>).score ?? 0),
     commentCount: Number((re.payload as Record<string, unknown>).descendants ?? 0),
   }));
@@ -83,10 +83,9 @@ export async function classifyEvents(
     relevantCount++;
 
     const payload = rawEvent.payload as Record<string, unknown>;
-    const title = String(payload._title ?? "");
-    const url = String(payload._url ?? "");
-    const publishedAtStr = payload._publishedAt as string | null;
-    const publishedAt = publishedAtStr ? new Date(publishedAtStr) : null;
+    const title = rawEvent.title ?? "";
+    const url = rawEvent.url ?? "";
+    const publishedAt = rawEvent.publishedAt;
 
     // ソース信頼度を動的に決定
     const sourceTrust = SOURCE_TRUST[rawEvent.source.type] ?? 0.5;

@@ -1,5 +1,6 @@
 import Parser from "rss-parser";
 import { z } from "zod";
+import { enrichEventsWithContent } from "./extract-content.js";
 import type { FetchResult, RawEventInput } from "./types.js";
 
 const parser = new Parser();
@@ -41,9 +42,11 @@ export async function fetchRSS(
         title: item.title || "(no title)",
         publishedAt: item.pubDate ? new Date(item.pubDate) : null,
         payload: item as unknown as Record<string, unknown>,
+        content: null as string | null,
       }));
 
-    return { ok: true, events };
+    const enriched = await enrichEventsWithContent(events);
+    return { ok: true, events: enriched };
   } catch (err) {
     return { ok: false, error: String(err) };
   }

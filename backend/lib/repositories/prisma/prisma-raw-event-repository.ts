@@ -31,14 +31,13 @@ export class PrismaRawEventRepository implements IRawEventRepository {
       return {
         sourceId,
         externalId: event.externalId,
-        payload: {
-          ...event.payload,
-          _url: event.url,
-          _title: event.title,
-          _publishedAt: event.publishedAt?.toISOString() ?? null,
-          _urlNormalized: urlNorm,
-        } as object,
+        payload: event.payload as object,
         contentHash: hash,
+        title: event.title,
+        url: event.url,
+        urlNormalized: urlNorm,
+        publishedAt: event.publishedAt,
+        content: event.content,
       };
     });
 

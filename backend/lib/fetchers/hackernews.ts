@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { enrichEventsWithContent, stripHtmlTags } from "./extract-content.js";
 import type { FetchResult, RawEventInput } from "./types.js";
 
 const HN_API = "https://hacker-news.firebaseio.com/v0";
@@ -8,6 +9,7 @@ const HNItemSchema = z
     id: z.number(),
     title: z.string(),
     url: z.string().optional(),
+    text: z.string().optional(),
     score: z.number(),
     time: z.number(),
     by: z.string(),
@@ -72,9 +74,15 @@ export async function fetchHackerNews(
         title: item.title,
         publishedAt: new Date(item.time * 1000),
         payload: item as unknown as Record<string, unknown>,
+        // Ask HN（URL なし）→ HN API text フィールドからタグ除去
+        content: !item.url && item.text ? stripHtmlTags(item.text) : null,
       }));
 
-    return { ok: true, events };
+    // URL ありの記事のみ本文抽出
+    const withUrl = events.filter((e) => e.content === null);
+    const withContent = events.filter((e) => e.content !== null);
+    const enriched = await enrichEventsWithContent(withUrl);
+    return { ok: true, events: [...enriched, ...withContent] };
   } catch (err) {
     return { ok: false, error: String(err) };
   }

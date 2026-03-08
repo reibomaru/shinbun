@@ -6,6 +6,12 @@ vi.mock("rss-parser", () => {
   return { default: MockParser };
 });
 
+vi.mock("./extract-content.js", () => ({
+  enrichEventsWithContent: vi
+    .fn()
+    .mockImplementation((events: unknown[]) => Promise.resolve(events)),
+}));
+
 import Parser from "rss-parser";
 import { fetchRSS } from "./rss.js";
 

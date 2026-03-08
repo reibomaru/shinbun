@@ -60,12 +60,17 @@
 | id | UUID | PK |
 | source_id | UUID | FK → source |
 | external_id | TEXT | 外部サービス側のID（重複検知用） |
-| payload | JSONB | 生データ（API レスポンス全体） |
+| payload | JSONB | 生データ（API レスポンス全体。メタデータは含まない） |
 | content_hash | TEXT | SHA-256（重複排除用） |
 | fetched_at | TIMESTAMP | 取得日時 |
 | processed | BOOLEAN | LLM処理済みフラグ |
 | retry_count | INTEGER | LLM処理リトライ回数（デフォルト: 0） |
 | last_error | TEXT | 最後に発生したエラーメッセージ（NULL可） |
+| title | TEXT | 記事タイトル（NULL可） |
+| url | TEXT | 原文URL（NULL可） |
+| url_normalized | TEXT | 正規化済みURL（NULL可） |
+| published_at | TIMESTAMP | 公開日時（NULL可） |
+| content | TEXT | 記事本文テキスト（@extractus/article-extractor で抽出、最大10,000文字、NULL可） |
 
 #### item
 処理済みの記事データ。無期限保持。
@@ -341,6 +346,11 @@ keywords:
   - externalId（ソース×外部ID ユニーク制約）による重複排除
   - ソースごとの最低品質フィルタ（例: HN score > min_score）
   ↓
+[Stage 1.5] 記事本文抽出（@extractus/article-extractor）
+  - 記事URLから本文を自動抽出（タイムアウト10秒、並列度5）
+  - HTMLタグを除去してプレーンテキスト化（最大10,000文字）
+  - raw_event.content に保存（失敗時は null、Stage 3 では従来通りタイトル+URLで要約）
+  ↓
 [Stage 2] 軽量LLM分類（Gemini Flash Lite）
   - 関連度判定（AI/Web開発に関係あるか）
   - topic / format ラベル付け
@@ -610,9 +620,12 @@ jobs:
   各ソースを並列フェッチ（Promise.allSettled）──────┐
       │                                              │
       │  github.ts  → GitHub Releases API            │
+      │    └─ r.body を content にマッピング          │
       │  rss.ts     → rss-parser                エラー時
-      │  hackernews.ts → Firebase HN API        error_count++
-      │                  (上位50件, 10件ずつ並列) lastError 記録
+      │    └─ enrichEventsWithContent で本文抽出  error_count++
+      │  hackernews.ts → Firebase HN API        lastError 記録
+      │    └─ URL有: enrichEventsWithContent
+      │       URL無(Ask HN): HN API text フィールド
       ▼
   [Stage 1] 重複排除（deduplicateEvents）
     - externalId による既存チェック
@@ -620,6 +633,8 @@ jobs:
       │ 新規のみ通過
       ▼
   raw_event に一括保存（createMany + skipDuplicates）
+    - title, url, urlNormalized, publishedAt, content を専用カラムに保存
+    - payload は純粋な生APIレスポンスのみ
       │
       ▼
   source.lastFetchedAt 更新、errorCount リセット
@@ -640,6 +655,7 @@ fetch.ts から共通モジュールとして利用される。
       ▼ 関連ありのみ
   [Stage 3] summarizeItems（Gemini Flash 要約・上位100件・並列度3）
     - 全ソースの未要約 item を対象（ソースタイプフィルタなし）
+    - rawEvent.content（記事本文）を使用して日本語要約生成
     - 日本語要約生成（short / medium / key_points / why_it_matters）
     - エンティティ抽出
     - Flash 失敗時は Flash Lite にフォールバック
@@ -701,7 +717,9 @@ shinbun/
 │   │   │   ├── rss.ts              # RSS/Atom フィードフェッチャー
 │   │   │   ├── rss.test.ts
 │   │   │   ├── hackernews.ts       # Hacker News API フェッチャー
-│   │   │   └── hackernews.test.ts
+│   │   │   ├── hackernews.test.ts
+│   │   │   ├── extract-content.ts  # 記事本文抽出（@extractus/article-extractor）
+│   │   │   └── extract-content.test.ts
 │   │   └── db/
 │   │       └── client.ts           # Prisma クライアント（シングルトン）
 │   │
