@@ -1,0 +1,19 @@
+name: Purge Cache
+
+on:
+  workflow_dispatch:
+
+jobs:
+  purge-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Purge Caches
+        uses: ./.github/actions/purge-cache
+        with:
+          cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          vercel_token: ${{ secrets.VERCEL_TOKEN }}
+          vercel_project_id: ${{ vars.VERCEL_PROJECT_ID }}
+          vercel_team_id: ${{ vars.VERCEL_ORG_ID }}
