@@ -1,6 +1,7 @@
 import { loadSources } from "../lib/config.js";
 import { rawEventRepository, sourceRepository } from "../lib/container.js";
 import { prisma } from "../lib/db/client.js";
+import { enrichEventsWithContent } from "../lib/fetchers/extract-content.js";
 import { fetchSource } from "../lib/fetchers/index.js";
 import { checkCost } from "../lib/usecases/check-cost.js";
 import { classifyEvents } from "../lib/usecases/classify-events.js";
@@ -43,7 +44,10 @@ async function main() {
       const unique = await deduplicateEvents(rawEventRepository, source.id, result.events);
       console.log(`    → ${unique.length} new (after dedup)`);
 
-      const savedCount = await saveEvents(rawEventRepository, source.id, unique);
+      const enriched = await enrichEventsWithContent(unique);
+      console.log(`    → ${enriched.filter((e) => e.content).length} enriched with content`);
+
+      const savedCount = await saveEvents(rawEventRepository, source.id, enriched);
 
       await sourceRepository.updateLastFetched(source.id);
 

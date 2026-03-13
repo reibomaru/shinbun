@@ -1,12 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("./extract-content.js", () => ({
-  enrichEventsWithContent: vi
-    .fn()
-    .mockImplementation((events: unknown[]) => Promise.resolve(events)),
-  stripHtmlTags: vi.fn().mockImplementation((html: string) => html.replace(/<[^>]*>/g, "").trim()),
-}));
-
 import { fetchHackerNews } from "./hackernews.js";
 
 const config = { mode: "top" as const, min_score: 50 };

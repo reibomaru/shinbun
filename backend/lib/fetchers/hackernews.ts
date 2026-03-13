@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { enrichEventsWithContent, stripHtmlTags } from "./extract-content.js";
+import { stripHtmlTags } from "./extract-content.js";
 import type { FetchResult, RawEventInput } from "./types.js";
 
 const HN_API = "https://hacker-news.firebaseio.com/v0";
@@ -78,11 +78,7 @@ export async function fetchHackerNews(
         content: !item.url && item.text ? stripHtmlTags(item.text) : null,
       }));
 
-    // URL ありの記事のみ本文抽出
-    const withUrl = events.filter((e) => e.content === null);
-    const withContent = events.filter((e) => e.content !== null);
-    const enriched = await enrichEventsWithContent(withUrl);
-    return { ok: true, events: [...enriched, ...withContent] };
+    return { ok: true, events };
   } catch (err) {
     return { ok: false, error: String(err) };
   }
