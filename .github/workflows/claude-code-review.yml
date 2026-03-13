@@ -2,7 +2,7 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize, reopened]
 
 jobs:
   claude-review:
@@ -20,7 +20,7 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@v1.0.63
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -32,6 +32,8 @@ jobs:
             - DB スキーマ / バックエンド / バッチ処理 → docs/ai_tech_daily_aggregator_technical_design.md
             - 機能仕様 / ユーザーフロー → docs/ai_tech_daily_aggregator_prd_v_2.md
             乖離がある場合は「設計書の更新が必要」と明示し、具体的にどの箇所を更新すべきか指摘してください。
-          claude_args: |
-            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(jq:*),Bash(echo:*),Read,Glob,Grep,Task,WebFetch"
+          plugins: |
+            review-pr@agent-plugins
+          plugin_marketplaces: |
+            https://github.com/reibomaru/agent-plugins.git
           use_sticky_comment: true
