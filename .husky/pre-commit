@@ -1,1 +1,7 @@
 npx lint-staged
+
+# Pin GitHub Actions to commit hashes if workflow files are staged
+if git diff --cached --name-only | grep -q '^\.github/workflows/'; then
+  pinact run
+  git diff --name-only .github/workflows/ | xargs -r git add
+fi
