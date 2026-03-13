@@ -55,7 +55,7 @@ describe("summarizeItem", () => {
       title: "Claude 4 released",
       url: "https://example.com",
       topic: "genai",
-      payload: {},
+      content: null,
     });
 
     expect(result.summaryShort).toContain("Claude 4");
@@ -79,7 +79,7 @@ describe("summarizeItem", () => {
       title: "Test fallback",
       url: "https://example.com",
       topic: "frontend",
-      payload: {},
+      content: null,
     });
 
     expect(result.modelUsed).toBe(MODELS.FLASH_LITE);
@@ -103,7 +103,7 @@ describe("summarizeItem", () => {
       title: "React + Vercel news",
       url: "https://example.com",
       topic: "frontend",
-      payload: {},
+      content: null,
     });
 
     expect(result.entities).toHaveLength(2);
@@ -126,7 +126,7 @@ describe("summarizeBatch", () => {
       title: `Article ${i}`,
       url: `https://example.com/${i}`,
       topic: "genai",
-      payload: {},
+      content: null,
     }));
 
     const results = await summarizeBatch(items, 2);

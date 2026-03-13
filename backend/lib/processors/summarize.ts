@@ -28,7 +28,7 @@ export interface SummarizeInput {
   title: string;
   url: string;
   topic: string;
-  payload: Record<string, unknown>;
+  content: string | null;
 }
 
 const SUMMARIZE_SYSTEM_PROMPT = `You are a tech news summarizer for a Japanese audience.
@@ -36,12 +36,12 @@ Summarize the given article in Japanese.
 Respond with ONLY a JSON object (no markdown, no explanation).`;
 
 function buildSummarizeUserPrompt(input: SummarizeInput): string {
-  const payloadText = input.payload._text ? String(input.payload._text).slice(0, 2000) : "";
+  const contentText = input.content ? input.content.slice(0, 2000) : "";
 
   return `Summarize this ${input.topic} article in Japanese:
 Title: ${input.title}
 URL: ${input.url}
-${payloadText ? `Content excerpt: ${payloadText}` : ""}
+${contentText ? `Content excerpt: ${contentText}` : ""}
 
 Return JSON with these fields:
 - summaryShort (string): 1-2 sentence summary in Japanese

@@ -53,6 +53,7 @@ export async function fetchGitHubReleases(
         title: r.name || r.tag_name,
         publishedAt: r.published_at ? new Date(r.published_at) : null,
         payload: r as unknown as Record<string, unknown>,
+        content: r.body ?? null,
       }));
 
     return { ok: true, events };
