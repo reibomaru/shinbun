@@ -10,6 +10,8 @@ export interface RawEventInput {
   publishedAt: Date | null;
   /** 生データ（APIレスポンス全体） */
   payload: Record<string, unknown>;
+  /** 記事本文テキスト */
+  content: string | null;
 }
 
 /** フェッチ結果 */

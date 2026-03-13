@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Tech Daily - Design System</title>
+<style>
+  :root {
+    --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+    --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+    --gray-700: #374151; --gray-900: #111827;
+    --purple-100: #f3e8ff; --purple-500: #a855f7; --purple-700: #7c3aed;
+    --blue-100: #dbeafe; --blue-500: #3b82f6; --blue-700: #1d4ed8;
+    --green-100: #dcfce7; --green-500: #22c55e; --green-700: #15803d;
+    --orange-100: #ffedd5; --orange-500: #f97316; --orange-700: #c2410c;
+    --red-50: #fef2f2; --red-100: #fee2e2; --red-300: #fca5a5;
+    --red-500: #ef4444; --red-700: #b91c1c;
+    --emerald-100: #d1fae5; --emerald-700: #047857;
+    --sky-100: #e0f2fe; --sky-700: #0369a1;
+    --amber-100: #fef3c7; --amber-700: #b45309;
+    --violet-100: #ede9fe; --violet-700: #6d28d9;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, 'Segoe UI', sans-serif;
+    color: var(--gray-900);
+    background: white;
+    line-height: 1.5;
+    padding: 40px 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+
+  h1 small {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--gray-500);
+    display: block;
+    margin-top: 4px;
+  }
+
+  .principle {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 24px 0 32px;
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .principle strong { color: var(--gray-900); }
+
+  h2 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--gray-500);
+    margin: 36px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--gray-200);
+  }
+
+  /* Grid layouts */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .color-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 12px;
+  }
+
+  .color-card .swatch {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .color-card .dot-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px 0;
+  }
+
+  .color-card .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .color-card .meta {
+    padding: 6px 10px 8px;
+    color: var(--gray-500);
+    font-size: 10px;
+    font-family: monospace;
+    line-height: 1.6;
+  }
+
+  .color-card .name {
+    font-weight: 600;
+    color: var(--gray-900);
+    font-size: 12px;
+    padding: 8px 10px 0;
+  }
+
+  /* Gray scale */
+  .gray-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .gray-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .gray-card .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray-500);
+    margin-bottom: 6px;
+  }
+
+  .gray-card .sample {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .gray-card .code {
+    font-size: 10px;
+    font-family: monospace;
+    color: var(--gray-400);
+  }
+
+  /* Rules */
+  .rules {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+  }
+
+  .rule-box {
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 13px;
+  }
+
+  .rule-box.do {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+  }
+
+  .rule-box.dont {
+    background: var(--red-50);
+    border: 1px solid var(--red-300);
+  }
+
+  .rule-box h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .rule-box.do h3 { color: var(--gray-700); }
+  .rule-box.dont h3 { color: var(--red-700); }
+
+  .rule-box ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .rule-box li {
+    padding: 3px 0;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.6;
+  }
+
+  .rule-box.do li::before { content: "OK"; position: absolute; left: 0; font-size: 10px; font-weight: 700; color: var(--gray-500); }
+  .rule-box.dont li::before { content: "NG"; position: absolute; left: 0; font-size: 10px; font-weight: 700; color: var(--red-500); }
+
+  /* Typography */
+  .type-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .type-table th {
+    text-align: left;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray-500);
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--gray-200);
+  }
+
+  .type-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+  }
+
+  .type-table .sample-text {
+    max-width: 280px;
+  }
+
+  .type-table code {
+    font-size: 11px;
+    background: var(--gray-100);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    color: var(--gray-700);
+    white-space: nowrap;
+  }
+
+  /* Component patterns */
+  .component-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 12px;
+  }
+
+  .component-box {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .component-box h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  /* Card demo */
+  .demo-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 12px;
+    background: white;
+    font-size: 12px;
+  }
+
+  .demo-card .tags { display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap; }
+  .demo-card .tag {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .demo-card .title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .demo-card .meta-line { color: var(--gray-500); font-size: 11px; }
+
+  /* Badge demo */
+  .badge-demos { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge-demo {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* Button demo */
+  .btn-demos { display: flex; flex-wrap: wrap; gap: 8px; }
+  .btn-demo {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: default;
+  }
+
+  .btn-ghost { background: transparent; color: var(--gray-700); }
+  .btn-ghost:hover { background: var(--gray-100); }
+  .btn-outline { background: white; border: 1px solid var(--gray-200); color: var(--gray-700); }
+  .btn-default { background: var(--gray-900); color: white; border: none; }
+  .btn-secondary { background: var(--gray-100); color: var(--gray-900); border: none; }
+
+  /* Layout section */
+  .layout-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .layout-box {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .layout-box .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray-500);
+    margin-bottom: 4px;
+  }
+
+  .layout-box .value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gray-900);
+  }
+
+  .layout-box .detail {
+    font-size: 11px;
+    color: var(--gray-500);
+    margin-top: 2px;
+  }
+
+  /* Spacing tokens */
+  .spacing-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 13px;
+  }
+
+  .spacing-bar {
+    height: 16px;
+    background: var(--gray-300);
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .spacing-label {
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--gray-500);
+    min-width: 60px;
+  }
+
+  .spacing-value {
+    color: var(--gray-700);
+    font-size: 12px;
+  }
+
+  /* Breakpoints */
+  .bp-row {
+    display: grid;
+    grid-template-columns: 80px 80px 1fr;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 13px;
+    align-items: center;
+  }
+
+  .bp-row code { font-size: 12px; font-weight: 600; }
+
+  .bp-row .bp-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--gray-200);
+  }
+
+  /* Exception banner */
+  .exception-box {
+    border: 1px solid var(--red-300);
+    background: var(--red-50);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+
+  .exception-box h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--red-700);
+    margin-bottom: 8px;
+  }
+
+  .exception-box .demo-banner {
+    background: var(--red-50);
+    border: 1px solid var(--red-300);
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--red-700);
+    margin-top: 8px;
+  }
+
+  .exception-box .demo-banner .icon { font-size: 16px; }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--gray-200);
+    font-size: 11px;
+    color: var(--gray-400);
+  }
+
+  @media print {
+    body { padding: 20px; font-size: 12px; }
+    h2 { margin-top: 24px; }
+    .color-grid { grid-template-columns: repeat(5, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<h1>AI Tech Daily <small>Design System Reference</small></h1>
+
+<div class="principle">
+  <strong>1.</strong> カラーはタグ（Topic / Format バッジ）のみに使用する<br>
+  <strong>2.</strong> タグ以外のUI要素はグレースケール基調で統一する<br>
+  <strong>3.</strong> 唯一の例外: 緊急アラートバナーのみ赤系を許容する
+</div>
+
+<!-- ===== TOPIC COLORS ===== -->
+<h2>Topic Colors</h2>
+<div class="color-grid">
+  <div class="color-card">
+    <div class="swatch" style="background:var(--purple-100);color:var(--purple-700);">GenAI</div>
+    <div class="dot-row"><div class="dot" style="background:var(--purple-500);"></div><span style="font-size:11px;">Section dot</span></div>
+    <div class="meta">bg-purple-100<br>text-purple-700<br>dot: bg-purple-500</div>
+  </div>
+  <div class="color-card">
+    <div class="swatch" style="background:var(--blue-100);color:var(--blue-700);">Frontend</div>
+    <div class="dot-row"><div class="dot" style="background:var(--blue-500);"></div><span style="font-size:11px;">Section dot</span></div>
+    <div class="meta">bg-blue-100<br>text-blue-700<br>dot: bg-blue-500</div>
+  </div>
+  <div class="color-card">
+    <div class="swatch" style="background:var(--green-100);color:var(--green-700);">Backend</div>
+    <div class="dot-row"><div class="dot" style="background:var(--green-500);"></div><span style="font-size:11px;">Section dot</span></div>
+    <div class="meta">bg-green-100<br>text-green-700<br>dot: bg-green-500</div>
+  </div>
+  <div class="color-card">
+    <div class="swatch" style="background:var(--orange-100);color:var(--orange-700);">DevTools</div>
+    <div class="dot-row"><div class="dot" style="background:var(--orange-500);"></div><span style="font-size:11px;">Section dot</span></div>
+    <div class="meta">bg-orange-100<br>text-orange-700<br>dot: bg-orange-500</div>
+  </div>
+  <div class="color-card">
+    <div class="swatch" style="background:var(--red-100);color:var(--red-700);">Security</div>
+    <div class="dot-row"><div class="dot" style="background:var(--red-500);"></div><span style="font-size:11px;">Section dot</span></div>
+    <div class="meta">bg-red-100<br>text-red-700<br>dot: bg-red-500</div>
+  </div>
+</div>
+
+<!-- ===== FORMAT COLORS ===== -->
+<h2>Format Colors</h2>
+<div class="color-grid">
+  <div class="color-card">
+    <div class="swatch" style="background:var(--emerald-100);color:var(--emerald-700);">Release</div>
+    <div class="meta">bg-emerald-100<br>text-emerald-700</div>
+  </div>
+  <div class="color-card">
+    <div class="swatch" style="background:var(--sky-100);color:var(--sky-700);">Tutorial</div>
+    <div class="meta">bg-sky-100<br>text-sky-700</div>
+  </div>
+  <div class="color-card">
+    <div class="swatch" style="background:var(--amber-100);color:var(--amber-700);">Benchmark</div>
+    <div class="meta">bg-amber-100<br>text-amber-700</div>
+  </div>
+  <div class="color-card">
+    <div class="swatch" style="background:var(--red-100);color:var(--red-700);">Incident</div>
+    <div class="meta">bg-red-100<br>text-red-700</div>
+  </div>
+  <div class="color-card">
+    <div class="swatch" style="background:var(--violet-100);color:var(--violet-700);">Announce</div>
+    <div class="meta">bg-violet-100<br>text-violet-700</div>
+  </div>
+</div>
+
+<!-- ===== BASE COLORS (GRAYSCALE) ===== -->
+<h2>Base Colors (Grayscale)</h2>
+
+<div class="gray-row">
+  <div class="gray-card">
+    <div class="label">Primary Text</div>
+    <div class="sample" style="color:var(--gray-900);">Article Title</div>
+    <div class="code">text-gray-900</div>
+  </div>
+  <div class="gray-card">
+    <div class="label">Secondary Text</div>
+    <div class="sample" style="color:var(--gray-700);">Section Header</div>
+    <div class="code">text-gray-700</div>
+  </div>
+  <div class="gray-card">
+    <div class="label">Tertiary Text</div>
+    <div class="sample" style="color:var(--gray-500);">Source / Date</div>
+    <div class="code">text-gray-500</div>
+  </div>
+  <div class="gray-card">
+    <div class="label">Disabled / Icon</div>
+    <div class="sample" style="color:var(--gray-400);">Placeholder</div>
+    <div class="code">text-gray-400</div>
+  </div>
+</div>
+
+<div class="gray-row">
+  <div class="gray-card">
+    <div class="label">Surface</div>
+    <div class="sample" style="background:white;border:1px solid var(--gray-200);border-radius:4px;height:28px;"></div>
+    <div class="code">bg-white</div>
+  </div>
+  <div class="gray-card">
+    <div class="label">Subtle</div>
+    <div class="sample" style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:4px;height:28px;"></div>
+    <div class="code">bg-gray-50</div>
+  </div>
+  <div class="gray-card">
+    <div class="label">Border</div>
+    <div class="sample" style="border-bottom:2px solid var(--gray-200);height:28px;"></div>
+    <div class="code">border-gray-200</div>
+  </div>
+  <div class="gray-card">
+    <div class="label">Border (Hover)</div>
+    <div class="sample" style="border-bottom:2px solid var(--gray-300);height:28px;"></div>
+    <div class="code">border-gray-300</div>
+  </div>
+</div>
+
+<!-- ===== COLOR RULES ===== -->
+<h2>Color Usage Rules</h2>
+<div class="rules">
+  <div class="rule-box do">
+    <h3>OK - Color Allowed</h3>
+    <ul>
+      <li>Topic / Format バッジに定義済みカラーを使う</li>
+      <li>カテゴリ見出しのドットに Topic カラーを使う</li>
+      <li>緊急アラートバナーに赤系を使う（唯一の例外）</li>
+    </ul>
+  </div>
+  <div class="rule-box dont">
+    <h3>NG - Gray Only</h3>
+    <ul>
+      <li>カード背景・ボーダーにカラーを付ける</li>
+      <li>アクションボタンのホバーにカラーを使う</li>
+      <li>重要度スコアの星に黄色を使う</li>
+      <li>"Why it matters" に黄色背景を使う</li>
+      <li>定義外の新しいカラーを独自に追加する</li>
+    </ul>
+  </div>
+</div>
+
+<div class="exception-box">
+  <h3>Exception: Urgent Alert Banner</h3>
+  <p>緊急アラートバナーのみ、安全上の視認性確保のため赤系カラーを許容する。<br>
+  ただし、緊急記事のカード自体はグレーボーダーのまま。タグ（Security / Incident）で識別する。</p>
+  <div class="demo-banner">
+    <span class="icon">&#9888;</span>
+    <span><strong style="color:var(--red-700);">緊急アラート</strong> &mdash; 重大なセキュリティ脆弱性が報告されました</span>
+  </div>
+</div>
+
+<!-- ===== TYPOGRAPHY ===== -->
+<h2>Typography</h2>
+
+<p style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">
+  Font: <strong style="color:var(--gray-900);">Geist Sans</strong> (UI) / <strong style="color:var(--gray-900);">Geist Mono</strong> (code)
+</p>
+
+<table class="type-table">
+  <thead>
+    <tr><th>Role</th><th>Sample</th><th>Tailwind</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Page Title</td>
+      <td class="sample-text" style="font-size:20px;font-weight:700;">AI Tech Daily</td>
+      <td><code>text-xl font-bold</code></td>
+    </tr>
+    <tr>
+      <td>Section Header</td>
+      <td class="sample-text" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gray-700);">TOP STORIES</td>
+      <td><code>text-sm font-bold uppercase tracking-wide</code></td>
+    </tr>
+    <tr>
+      <td>Article Title</td>
+      <td class="sample-text" style="font-size:14px;font-weight:600;line-height:1.4;">Claude 4.5 Opus がリリース</td>
+      <td><code>text-base font-semibold leading-snug</code></td>
+    </tr>
+    <tr>
+      <td>Body</td>
+      <td class="sample-text" style="font-size:13px;line-height:1.625;">要約テキストが入ります。最大2行まで表示されます。</td>
+      <td><code>text-sm leading-relaxed</code></td>
+    </tr>
+    <tr>
+      <td>Badge / Label</td>
+      <td class="sample-text"><span style="font-size:11px;font-weight:500;background:var(--purple-100);color:var(--purple-700);padding:2px 8px;border-radius:99px;">GenAI</span></td>
+      <td><code>text-xs font-medium</code></td>
+    </tr>
+    <tr>
+      <td>Metadata</td>
+      <td class="sample-text" style="font-size:11px;color:var(--gray-500);">TechCrunch &middot; 2h ago</td>
+      <td><code>text-xs text-gray-500</code></td>
+    </tr>
+    <tr>
+      <td>Ranking Number</td>
+      <td class="sample-text" style="font-size:24px;font-weight:700;color:var(--gray-200);line-height:1;">1</td>
+      <td><code>text-2xl font-bold text-gray-200</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ===== COMPONENTS ===== -->
+<h2>Component Patterns</h2>
+
+<div class="component-grid">
+  <div class="component-box">
+    <h3>Card (Normal / Compact)</h3>
+    <div class="demo-card" style="margin-bottom:8px;">
+      <div class="tags">
+        <span class="tag" style="background:var(--purple-100);color:var(--purple-700);">GenAI</span>
+        <span class="tag" style="background:var(--emerald-100);color:var(--emerald-700);">Release</span>
+        <span class="tag" style="background:white;border:1px solid var(--gray-300);color:var(--gray-700);">EN</span>
+      </div>
+      <div class="title">Claude 4.5 Opus Released with Enhanced Reasoning</div>
+      <div style="font-size:12px;color:var(--gray-700);margin-bottom:4px;line-height:1.5;">Anthropic announced the release of Claude 4.5 Opus, featuring improved...</div>
+      <div class="meta-line">Anthropic Blog &middot; 2h ago &nbsp;&nbsp; <span style="color:var(--gray-400);">&#9733;</span> 95</div>
+    </div>
+    <div style="font-size:11px;color:var(--gray-500);">
+      Normal: <code style="font-size:10px;background:var(--gray-100);padding:1px 4px;border-radius:2px;">p-4</code> &nbsp;
+      Compact: <code style="font-size:10px;background:var(--gray-100);padding:1px 4px;border-radius:2px;">p-3</code> (no summary, no actions)
+    </div>
+  </div>
+
+  <div class="component-box">
+    <h3>Badges / Tags</h3>
+    <div class="badge-demos" style="margin-bottom:12px;">
+      <span class="badge-demo" style="background:var(--purple-100);color:var(--purple-700);">GenAI</span>
+      <span class="badge-demo" style="background:var(--blue-100);color:var(--blue-700);">Frontend</span>
+      <span class="badge-demo" style="background:var(--green-100);color:var(--green-700);">Backend</span>
+      <span class="badge-demo" style="background:var(--orange-100);color:var(--orange-700);">DevTools</span>
+      <span class="badge-demo" style="background:var(--red-100);color:var(--red-700);">Security</span>
+    </div>
+    <div class="badge-demos" style="margin-bottom:12px;">
+      <span class="badge-demo" style="background:var(--emerald-100);color:var(--emerald-700);">Release</span>
+      <span class="badge-demo" style="background:var(--sky-100);color:var(--sky-700);">Tutorial</span>
+      <span class="badge-demo" style="background:var(--amber-100);color:var(--amber-700);">Benchmark</span>
+      <span class="badge-demo" style="background:var(--red-100);color:var(--red-700);">Incident</span>
+      <span class="badge-demo" style="background:var(--violet-100);color:var(--violet-700);">Announce</span>
+    </div>
+    <div class="badge-demos">
+      <span class="badge-demo" style="background:white;border:1px solid var(--gray-300);color:var(--gray-700);">EN</span>
+      <span class="badge-demo" style="background:white;border:1px solid var(--gray-300);color:var(--gray-700);">JA</span>
+    </div>
+    <div style="font-size:11px;color:var(--gray-500);margin-top:8px;">
+      <code style="font-size:10px;background:var(--gray-100);padding:1px 4px;border-radius:2px;">text-xs px-2.5 py-1 rounded-full font-medium</code>
+    </div>
+  </div>
+
+  <div class="component-box">
+    <h3>Buttons</h3>
+    <div class="btn-demos">
+      <span class="btn-demo btn-default">Login</span>
+      <span class="btn-demo btn-secondary">Dashboard</span>
+      <span class="btn-demo btn-outline">Unread Only</span>
+      <span class="btn-demo btn-ghost">Save</span>
+    </div>
+    <div style="font-size:11px;color:var(--gray-500);margin-top:10px;">
+      Action hover: <code style="font-size:10px;background:var(--gray-100);padding:1px 4px;border-radius:2px;">hover:text-gray-900</code> (unified)
+    </div>
+  </div>
+
+  <div class="component-box">
+    <h3>Section Header</h3>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:var(--purple-500);"></div>
+      <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gray-700);">GENAI</span>
+      <span style="font-size:12px;color:var(--gray-500);">12 articles</span>
+    </div>
+    <div style="font-size:11px;color:var(--gray-500);">
+      <code style="font-size:10px;background:var(--gray-100);padding:1px 4px;border-radius:2px;">text-sm font-bold uppercase tracking-wide text-gray-700</code>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LAYOUT ===== -->
+<h2>Layout &amp; Spacing</h2>
+
+<div class="layout-grid">
+  <div class="layout-box">
+    <div class="label">Dashboard</div>
+    <div class="value">7xl</div>
+    <div class="detail">max-w-7xl (1280px)</div>
+  </div>
+  <div class="layout-box">
+    <div class="label">Archives</div>
+    <div class="value">4xl</div>
+    <div class="detail">max-w-4xl (896px)</div>
+  </div>
+  <div class="layout-box">
+    <div class="label">Detail / Saved</div>
+    <div class="value">3xl</div>
+    <div class="detail">max-w-3xl (768px)</div>
+  </div>
+</div>
+
+<h2>Spacing Tokens (4px base)</h2>
+<div style="margin-top:8px;">
+  <div class="spacing-row">
+    <div class="spacing-label">gap-1</div>
+    <div class="spacing-bar" style="width:4px;"></div>
+    <div class="spacing-value">4px &mdash; Badge gap</div>
+  </div>
+  <div class="spacing-row">
+    <div class="spacing-label">gap-1.5</div>
+    <div class="spacing-bar" style="width:6px;"></div>
+    <div class="spacing-value">6px &mdash; Tag row</div>
+  </div>
+  <div class="spacing-row">
+    <div class="spacing-label">gap-2</div>
+    <div class="spacing-bar" style="width:16px;"></div>
+    <div class="spacing-value">8px &mdash; Card inner</div>
+  </div>
+  <div class="spacing-row">
+    <div class="spacing-label">gap-3</div>
+    <div class="spacing-bar" style="width:24px;"></div>
+    <div class="spacing-value">12px &mdash; List items</div>
+  </div>
+  <div class="spacing-row">
+    <div class="spacing-label">gap-4</div>
+    <div class="spacing-bar" style="width:32px;"></div>
+    <div class="spacing-value">16px &mdash; Section padding</div>
+  </div>
+  <div class="spacing-row">
+    <div class="spacing-label">gap-6</div>
+    <div class="spacing-bar" style="width:48px;"></div>
+    <div class="spacing-value">24px &mdash; Between sections</div>
+  </div>
+</div>
+
+<h2>Responsive Breakpoints</h2>
+<div style="margin-top:8px;">
+  <div class="bp-row">
+    <code>default</code>
+    <span style="font-size:12px;color:var(--gray-500);">&lt; 640px</span>
+    <span style="font-size:12px;">Mobile: 1-col, hamburger menu</span>
+  </div>
+  <div class="bp-row">
+    <code>sm:</code>
+    <span style="font-size:12px;color:var(--gray-500);">&ge; 640px</span>
+    <span style="font-size:12px;">Card grid 2-col, filter bar horizontal</span>
+  </div>
+  <div class="bp-row">
+    <code>md:</code>
+    <span style="font-size:12px;color:var(--gray-500);">&ge; 768px</span>
+    <span style="font-size:12px;">Inline navigation (no hamburger)</span>
+  </div>
+  <div class="bp-row">
+    <code>lg:</code>
+    <span style="font-size:12px;color:var(--gray-500);">&ge; 1024px</span>
+    <span style="font-size:12px;">2-column layout, sticky sidebar</span>
+  </div>
+</div>
+
+<footer>
+  AI Tech Daily Design System v1.0 &mdash; Issue #58 &mdash; Updated 2026-03-07
+</footer>
+
+</body>
+</html>

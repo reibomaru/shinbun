@@ -48,7 +48,7 @@ export async function summarizeItems(
         title: item.title,
         url: item.url,
         topic: topicLabel?.labelValue ?? "unknown",
-        payload: item.rawEvent.payload as Record<string, unknown>,
+        content: item.rawEvent.content ?? null,
       };
 
       process.stdout.write(

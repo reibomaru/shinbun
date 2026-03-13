@@ -41,6 +41,7 @@ export async function fetchRSS(
         title: item.title || "(no title)",
         publishedAt: item.pubDate ? new Date(item.pubDate) : null,
         payload: item as unknown as Record<string, unknown>,
+        content: null as string | null,
       }));
 
     return { ok: true, events };
