@@ -1,0 +1,51 @@
+name: Purge Cache
+description: Purge Cloudflare and Vercel caches
+
+inputs:
+  cloudflare_api_token:
+    description: Cloudflare API token with Cache Purge permission
+    required: true
+  cloudflare_zone_id:
+    description: Cloudflare Zone ID for the target domain
+    required: true
+  vercel_token:
+    description: Vercel API token
+    required: true
+  vercel_project_id:
+    description: Vercel project ID
+    required: true
+  vercel_team_id:
+    description: Vercel team (org) ID
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Purge Cloudflare Cache
+      shell: bash
+      run: |
+        response=$(curl -s -w "\n%{http_code}" -X POST \
+          "https://api.cloudflare.com/client/v4/zones/${{ inputs.cloudflare_zone_id }}/purge_cache" \
+          -H "Authorization: Bearer ${{ inputs.cloudflare_api_token }}" \
+          -H "Content-Type: application/json" \
+          --data '{"purge_everything":true}')
+        http_code=$(echo "$response" | tail -1)
+        body=$(echo "$response" | head -n -1)
+        echo "Cloudflare cache purge responded with status $http_code"
+        if [ "$http_code" -ne 200 ]; then
+          echo "::error::Cloudflare cache purge failed with status $http_code"
+          exit 1
+        fi
+
+    - name: Purge Vercel Data Cache
+      shell: bash
+      run: |
+        response=$(curl -s -w "\n%{http_code}" -X POST \
+          "https://api.vercel.com/v1/data-cache/purge?projectId=${{ inputs.vercel_project_id }}&teamId=${{ inputs.vercel_team_id }}" \
+          -H "Authorization: Bearer ${{ inputs.vercel_token }}")
+        http_code=$(echo "$response" | tail -1)
+        body=$(echo "$response" | head -n -1)
+        echo "Vercel data cache purge responded with status $http_code"
+        if [ "$http_code" -ne 200 ]; then
+          echo "::warning::Vercel data cache purge failed with status $http_code"
+        fi
