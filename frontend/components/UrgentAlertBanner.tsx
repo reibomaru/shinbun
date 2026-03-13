@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import type { Article } from "@/lib/types";
+import { markAsRead } from "@/lib/actions";
 import { getVisibleAlerts, dismissArticle, isSafeUrl } from "./urgent-alert-helpers";
 
 const TOPIC_LABELS: Record<string, string> = {
@@ -40,6 +41,7 @@ export function UrgentAlertBanner({ articles }: { articles: Article[] }) {
   const handleAcknowledge = () => {
     if (selectedArticle) {
       setDismissedIds((prev) => dismissArticle(prev, selectedArticle.id));
+      markAsRead(selectedArticle.id);
       setSelectedArticle(null);
     }
   };
