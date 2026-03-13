@@ -140,7 +140,7 @@ export async function getTopStories(limit = 3): Promise<Article[]> {
 }
 
 export async function getUrgentArticles(): Promise<Article[]> {
-  const items = await queryItems({ isUrgent: true });
+  const items = await queryItems({ isUrgent: true, readStatus: null });
   return items.map((item) => mapItemToArticle(item));
 }
 
