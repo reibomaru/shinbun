@@ -9,6 +9,17 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "EnterWorktree",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git fetch origin main && git checkout main && git pull origin main && git checkout -"
+          }
+        ]
+      }
     ]
   }
 }
