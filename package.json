@@ -15,9 +15,9 @@
     "db:seed": "prisma db seed",
     "fetch": "tsx --env-file=.env backend/scripts/fetch.ts",
     "test": "vitest run",
-    "lint": "biome check backend/",
-    "lint:fix": "biome check --fix backend/",
-    "format": "biome format --write backend/",
+    "lint": "biome check",
+    "lint:fix": "biome check --fix",
+    "format": "biome format --write",
     "prepare": "husky"
   },
   "dependencies": {
@@ -40,15 +40,9 @@
     "vitest": "^4.0.18"
   },
   "lint-staged": {
-    "backend/**/*.ts": [
+    "**/*.{ts,tsx}": [
       "biome check --fix",
       "biome format --write"
-    ],
-    "mock/**/*.{ts,tsx}": [
-      "pnpm --filter mock lint"
-    ],
-    "frontend/**/*.{ts,tsx}": [
-      "pnpm --filter shinbun-frontend lint"
     ]
   }
 }

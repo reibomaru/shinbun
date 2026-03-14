@@ -27,7 +27,8 @@ export const ARTICLES: Article[] = [
   {
     id: "1",
     title: "Claude 3.7 Sonnet リリース",
-    summaryShort: "拡張思考モードとAPIコスト20%削減を実現。コンテキストウィンドウは200Kトークンに拡張。",
+    summaryShort:
+      "拡張思考モードとAPIコスト20%削減を実現。コンテキストウィンドウは200Kトークンに拡張。",
     summaryMedium:
       "Anthropicが新モデルClaude 3.7 Sonnetを公開。拡張思考モードにより複雑な推論タスクの精度が向上し、APIコストは前モデル比20%削減。コンテキストウィンドウは200Kトークンに拡張された。エージェント用途でのコスト障壁が下がり、実用化がさらに加速する見込み。",
     keyPoints: [
@@ -85,7 +86,8 @@ export const ARTICLES: Article[] = [
       "GPT-4oを超えるベンチマーク結果",
       "商用利用可能なライセンス",
     ],
-    whyItMatters: "オープンウェイトの選択肢が大幅に広がり、プロプライエタリモデルへの依存を減らせる。",
+    whyItMatters:
+      "オープンウェイトの選択肢が大幅に広がり、プロプライエタリモデルへの依存を減らせる。",
     topic: "genai",
     format: "release",
     source: "Meta",
@@ -127,7 +129,8 @@ export const ARTICLES: Article[] = [
   {
     id: "5",
     title: "React 19.1 — 新しいフォームAPIとサーバーアクション改善",
-    summaryShort: "Metaがリリース。フォームのプログレッシブエンハンスメントがより簡単に実装可能に。",
+    summaryShort:
+      "Metaがリリース。フォームのプログレッシブエンハンスメントがより簡単に実装可能に。",
     summaryMedium:
       "React 19.1がリリース。新しいuseFormStatusフックによりフォームの状態管理が改善。サーバーアクションのエラーハンドリングも強化され、フルスタックアプリ開発がより直感的になった。",
     keyPoints: [
@@ -135,7 +138,8 @@ export const ARTICLES: Article[] = [
       "サーバーアクションのエラーバウンダリ対応",
       "TypeScript 5.5 との型推論改善",
     ],
-    whyItMatters: "サーバーコンポーネントとクライアントの境界がより明確になり、設計しやすくなった。",
+    whyItMatters:
+      "サーバーコンポーネントとクライアントの境界がより明確になり、設計しやすくなった。",
     topic: "frontend",
     format: "release",
     source: "Meta",
@@ -228,11 +232,41 @@ export const ARTICLES: Article[] = [
 ];
 
 export const RELEASES = [
-  { name: "Claude Code v1.2", source: "Anthropic", publishedAt: "2時間前", publishedAtAbsolute: "2026/03/05 14:00", score: 92 },
-  { name: "Next.js 15.2", source: "Vercel", publishedAt: "5時間前", publishedAtAbsolute: "2026/03/05 11:00", score: 85 },
-  { name: "React 19.1", source: "Meta", publishedAt: "1日前", publishedAtAbsolute: "2026/03/04 10:00", score: 61 },
-  { name: "Supabase v2.8", source: "Supabase", publishedAt: "2日前", publishedAtAbsolute: "2026/03/03 15:00", score: 55 },
-  { name: "Tailwind CSS v4.1", source: "Tailwind Labs", publishedAt: "3日前", publishedAtAbsolute: "2026/03/02 09:00", score: 48 },
+  {
+    name: "Claude Code v1.2",
+    source: "Anthropic",
+    publishedAt: "2時間前",
+    publishedAtAbsolute: "2026/03/05 14:00",
+    score: 92,
+  },
+  {
+    name: "Next.js 15.2",
+    source: "Vercel",
+    publishedAt: "5時間前",
+    publishedAtAbsolute: "2026/03/05 11:00",
+    score: 85,
+  },
+  {
+    name: "React 19.1",
+    source: "Meta",
+    publishedAt: "1日前",
+    publishedAtAbsolute: "2026/03/04 10:00",
+    score: 61,
+  },
+  {
+    name: "Supabase v2.8",
+    source: "Supabase",
+    publishedAt: "2日前",
+    publishedAtAbsolute: "2026/03/03 15:00",
+    score: 55,
+  },
+  {
+    name: "Tailwind CSS v4.1",
+    source: "Tailwind Labs",
+    publishedAt: "3日前",
+    publishedAtAbsolute: "2026/03/02 09:00",
+    score: 48,
+  },
 ];
 
 export const CATEGORY_COUNTS = {
@@ -254,13 +288,28 @@ export const ARCHIVE_DAYS: ArchiveDay[] = [
   { date: "2026-03-04", dayOfWeek: "水", articleCount: 18, topTitle: "GPT-5 APIベータ公開" },
   { date: "2026-03-03", dayOfWeek: "火", articleCount: 22, topTitle: "Deno 2.1 リリース" },
   { date: "2026-03-02", dayOfWeek: "月", articleCount: 15, topTitle: "Tailwind CSS v4.1 リリース" },
-  { date: "2026-03-01", dayOfWeek: "日", articleCount: 20, topTitle: "React Server Components 実践ガイド" },
-  { date: "2026-02-28", dayOfWeek: "土", articleCount: 16, topTitle: "Supabase v2.8 Edge Functions改善" },
+  {
+    date: "2026-03-01",
+    dayOfWeek: "日",
+    articleCount: 20,
+    topTitle: "React Server Components 実践ガイド",
+  },
+  {
+    date: "2026-02-28",
+    dayOfWeek: "土",
+    articleCount: 16,
+    topTitle: "Supabase v2.8 Edge Functions改善",
+  },
   { date: "2026-02-27", dayOfWeek: "金", articleCount: 19, topTitle: "Bun 1.3 リリース" },
   { date: "2026-02-26", dayOfWeek: "木", articleCount: 21, topTitle: "LangChain v0.4 リリース" },
   { date: "2026-02-25", dayOfWeek: "水", articleCount: 14, topTitle: "Vercel AI SDK 4.0" },
   { date: "2026-02-24", dayOfWeek: "火", articleCount: 17, topTitle: "Rust 1.85 安定版リリース" },
-  { date: "2026-02-23", dayOfWeek: "月", articleCount: 23, topTitle: "Next.js 15.1 セキュリティ修正" },
+  {
+    date: "2026-02-23",
+    dayOfWeek: "月",
+    articleCount: 23,
+    topTitle: "Next.js 15.1 セキュリティ修正",
+  },
   { date: "2026-02-22", dayOfWeek: "日", articleCount: 12, topTitle: "Prisma 6.0 リリース" },
 ];
 
@@ -268,20 +317,44 @@ export const SAVED_ARTICLES = [
   {
     date: "2026/03/01",
     items: [
-      { id: "1", title: "Claude 3.7 Sonnet リリース", source: "Anthropic", publishedAt: "2時間前", tags: ["llm", "api"] },
-      { id: "2", title: "Next.js 15.2 リリース", source: "Vercel", publishedAt: "5時間前", tags: ["frontend"] },
+      {
+        id: "1",
+        title: "Claude 3.7 Sonnet リリース",
+        source: "Anthropic",
+        publishedAt: "2時間前",
+        tags: ["llm", "api"],
+      },
+      {
+        id: "2",
+        title: "Next.js 15.2 リリース",
+        source: "Vercel",
+        publishedAt: "5時間前",
+        tags: ["frontend"],
+      },
     ],
   },
   {
     date: "2026/02/28",
     items: [
-      { id: "6", title: "Supabase v2.8 — Edge Functions の大幅改善", source: "Supabase", publishedAt: "2日前", tags: ["backend", "serverless"] },
+      {
+        id: "6",
+        title: "Supabase v2.8 — Edge Functions の大幅改善",
+        source: "Supabase",
+        publishedAt: "2日前",
+        tags: ["backend", "serverless"],
+      },
     ],
   },
   {
     date: "2026/02/25",
     items: [
-      { id: "5", title: "React 19.1 — 新しいフォームAPI", source: "Meta", publishedAt: "4日前", tags: ["react", "frontend"] },
+      {
+        id: "5",
+        title: "React 19.1 — 新しいフォームAPI",
+        source: "Meta",
+        publishedAt: "4日前",
+        tags: ["react", "frontend"],
+      },
     ],
   },
 ];

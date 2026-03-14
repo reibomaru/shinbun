@@ -1,8 +1,12 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.4/schema.json",
   "files": {
-    "includes": ["backend/**/*.ts"],
-    "experimentalScannerIgnores": ["backend/migration/**", "backend/test-fixtures/**"]
+    "includes": ["backend/**/*.ts", "mock/**/*.{ts,tsx}", "frontend/**/*.{ts,tsx}"],
+    "experimentalScannerIgnores": [
+      "backend/migration/**",
+      "backend/test-fixtures/**",
+      "**/node_modules/**"
+    ]
   },
   "formatter": {
     "indentStyle": "space",
@@ -18,7 +22,13 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "suspicious": {
+        "noArrayIndexKey": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "warn"
+      }
     }
   }
 }

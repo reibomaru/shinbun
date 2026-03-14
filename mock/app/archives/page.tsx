@@ -1,7 +1,7 @@
-import { ARCHIVE_DAYS } from "@/lib/mock-data";
-import { Card, CardContent } from "@/components/ui/card";
-import { Newspaper, FileText } from "lucide-react";
+import { FileText, Newspaper } from "lucide-react";
 import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { ARCHIVE_DAYS } from "@/lib/mock-data";
 
 export default function ArchivesPage() {
   // Group by month
@@ -41,16 +41,16 @@ export default function ArchivesPage() {
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-lg font-bold text-gray-900">
                             {Number(m)}/{Number(d)}
-                            <span className="text-sm font-normal text-gray-400 ml-1">({day.dayOfWeek})</span>
+                            <span className="text-sm font-normal text-gray-400 ml-1">
+                              ({day.dayOfWeek})
+                            </span>
                           </span>
                           <div className="flex items-center gap-1 text-xs text-gray-500">
                             <FileText className="w-3.5 h-3.5" />
                             <span>{day.articleCount}件</span>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 truncate">
-                          TOP: {day.topTitle}
-                        </p>
+                        <p className="text-sm text-gray-600 truncate">TOP: {day.topTitle}</p>
                       </CardContent>
                     </Card>
                   </Link>
