@@ -59,7 +59,8 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
-        run: vercel promote ${{ steps.deploy.outputs.url }} --token=${{ secrets.VERCEL_TOKEN }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: vercel promote "$DEPLOYMENT_URL" --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Purge Caches
         uses: ./.github/actions/purge-cache
