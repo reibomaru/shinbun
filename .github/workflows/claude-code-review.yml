@@ -24,7 +24,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
-            /review-pr ${{ github.repository }} ${{ github.event.pull_request.number }}
+            /review-pr:review-pr ${{ github.repository }} ${{ github.event.pull_request.number }}
 
             追加チェック: docs/ 配下の設計書と実装の整合性を確認してください。
             PRの変更内容が以下の設計書と乖離していないか検証し、乖離があればレビューコメントで指摘してください:
