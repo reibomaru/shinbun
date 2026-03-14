@@ -1,8 +1,8 @@
-import { ARTICLES, CATEGORY_COUNTS } from "@/lib/mock-data";
-import { MasonryGrid } from "@/components/MasonryGrid";
-import { Button } from "@/components/ui/button";
 import { Filter } from "lucide-react";
+import { MasonryGrid } from "@/components/MasonryGrid";
 import { UrgentAlertBanner } from "@/components/UrgentAlertBanner";
+import { Button } from "@/components/ui/button";
+import { ARTICLES, CATEGORY_COUNTS } from "@/lib/mock-data";
 
 export default function DashboardPage() {
   const sortedArticles = [...ARTICLES].sort((a, b) => b.importanceScore - a.importanceScore);

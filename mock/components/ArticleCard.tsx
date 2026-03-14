@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { ChevronDown, ChevronUp, Clock } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Article } from "@/lib/mock-data";
-import { Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { Article } from "@/lib/mock-data";
 
 const TOPIC_COLORS: Record<string, string> = {
   genai: "bg-purple-100 text-purple-700",
@@ -48,7 +48,12 @@ interface ArticleCardProps {
   useAbsoluteTime?: boolean;
 }
 
-export function ArticleCard({ article, compact = false, expanded = false, useAbsoluteTime = false }: ArticleCardProps) {
+export function ArticleCard({
+  article,
+  compact = false,
+  expanded = false,
+  useAbsoluteTime = false,
+}: ArticleCardProps) {
   const [isOpen, setIsOpen] = useState(expanded);
 
   return (
@@ -60,10 +65,14 @@ export function ArticleCard({ article, compact = false, expanded = false, useAbs
       <CardContent className={compact ? "p-3" : "p-4"}>
         {/* Labels + Actions */}
         <div className="flex items-center gap-1.5 mb-2">
-          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}>
+          <span
+            className={`text-xs px-2.5 py-1 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}
+          >
             {TOPIC_LABELS[article.topic]}
           </span>
-          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}>
+          <span
+            className={`text-xs px-2.5 py-1 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}
+          >
             {FORMAT_LABELS[article.format]}
           </span>
           <Badge variant="outline" className="text-xs py-1">
@@ -71,7 +80,12 @@ export function ArticleCard({ article, compact = false, expanded = false, useAbs
           </Badge>
           {!compact && (
             <div className="ml-auto flex items-center gap-1">
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-gray-400 hover:text-blue-600" onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-gray-400 hover:text-blue-600"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <Clock className="w-3.5 h-3.5 mr-1" />
                 あとで読む
               </Button>
@@ -94,7 +108,9 @@ export function ArticleCard({ article, compact = false, expanded = false, useAbs
 
         {/* Title */}
         <Link href={`/items/${article.id}`}>
-          <h3 className={`font-semibold text-gray-900 leading-snug mb-1 cursor-pointer hover:text-blue-600 ${compact ? "text-sm" : "text-base"}`}>
+          <h3
+            className={`font-semibold text-gray-900 leading-snug mb-1 cursor-pointer hover:text-blue-600 ${compact ? "text-sm" : "text-base"}`}
+          >
             {article.title}
           </h3>
         </Link>
@@ -102,9 +118,7 @@ export function ArticleCard({ article, compact = false, expanded = false, useAbs
         {/* Summary */}
         {isOpen ? (
           <div className="mt-2 space-y-3">
-            <p className="text-sm text-gray-700 leading-relaxed">
-              {article.summaryMedium}
-            </p>
+            <p className="text-sm text-gray-700 leading-relaxed">{article.summaryMedium}</p>
             {article.keyPoints.length > 0 && (
               <ul className="space-y-1">
                 {article.keyPoints.map((point, i) => (
@@ -166,7 +180,6 @@ export function ArticleCard({ article, compact = false, expanded = false, useAbs
             </TooltipContent>
           </Tooltip>
         </div>
-
       </CardContent>
     </Card>
   );

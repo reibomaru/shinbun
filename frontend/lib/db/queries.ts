@@ -1,15 +1,15 @@
-import { prisma } from "./client";
-import { buildOrderByArray, scaleImportanceScore } from "./query-helpers";
 import type {
-  Article,
   ArchiveDay,
-  Topic,
+  Article,
+  CategoryCounts,
   Format,
+  PaginatedArticles,
   Release,
   SavedGroup,
-  CategoryCounts,
-  PaginatedArticles,
+  Topic,
 } from "../types";
+import { prisma } from "./client";
+import { buildOrderByArray, scaleImportanceScore } from "./query-helpers";
 
 // ─── Helpers ──────────────────────────────────────────
 
@@ -22,9 +22,7 @@ function extractLabel(
   allowed: string[],
   fallback: string,
 ): string {
-  const found = labels.find(
-    (l) => l.labelType === type && allowed.includes(l.labelValue),
-  );
+  const found = labels.find((l) => l.labelType === type && allowed.includes(l.labelValue));
   return found?.labelValue ?? fallback;
 }
 
@@ -171,12 +169,20 @@ export async function getReleases(limit = 5): Promise<Release[]> {
       rawEvent: { include: { source: true } },
     },
   });
-  return items.map((item: { title: string; url: string; rawEvent: { source: { name: string; type: string } }; publishedAt: Date | null; importanceScore: number | null }) => ({
-    name: item.title,
-    source: extractSourceName(item.url, item.rawEvent.source.name, item.rawEvent.source.type),
-    publishedAt: relativeTime(item.publishedAt),
-    score: item.importanceScore ?? 0,
-  }));
+  return items.map(
+    (item: {
+      title: string;
+      url: string;
+      rawEvent: { source: { name: string; type: string } };
+      publishedAt: Date | null;
+      importanceScore: number | null;
+    }) => ({
+      name: item.title,
+      source: extractSourceName(item.url, item.rawEvent.source.name, item.rawEvent.source.type),
+      publishedAt: relativeTime(item.publishedAt),
+      score: item.importanceScore ?? 0,
+    }),
+  );
 }
 
 export async function getCategoryCounts(): Promise<CategoryCounts> {
@@ -287,9 +293,7 @@ async function querySnapshotItems(
   const itemIds = snapshotItems.map((si) => si.itemId);
   if (itemIds.length === 0) return [];
 
-  const orderByArray = orderBy
-    ? buildOrderByArray(orderBy)
-    : [{ createdAt: "desc" as const }];
+  const orderByArray = orderBy ? buildOrderByArray(orderBy) : [{ createdAt: "desc" as const }];
   return prisma.item.findMany({
     where: { id: { in: itemIds }, ...where },
     orderBy: orderByArray,
@@ -304,8 +308,16 @@ async function querySnapshotItems(
   }) as Promise<ItemRow[]>;
 }
 
-export async function getArchiveAllArticlesSorted(date: string, limit?: number): Promise<Article[]> {
-  const items = await querySnapshotItems(date, {}, { importanceScore: "desc" }, limit ?? DEFAULT_PAGE_SIZE);
+export async function getArchiveAllArticlesSorted(
+  date: string,
+  limit?: number,
+): Promise<Article[]> {
+  const items = await querySnapshotItems(
+    date,
+    {},
+    { importanceScore: "desc" },
+    limit ?? DEFAULT_PAGE_SIZE,
+  );
   return items.map((item: ItemRow) => mapItemToArticle(item, absoluteTime));
 }
 
@@ -322,7 +334,7 @@ export async function getArchiveAllArticlesSortedPaginated(
   if (itemIds.length === 0) return { articles: [], nextCursor: null, hasMore: false };
 
   const take = limit + 1;
-  const items = await prisma.item.findMany({
+  const items = (await prisma.item.findMany({
     where: { id: { in: itemIds } },
     orderBy: [{ importanceScore: "desc" }, { createdAt: "desc" }],
     take,
@@ -334,7 +346,7 @@ export async function getArchiveAllArticlesSortedPaginated(
       readStatus: true,
       itemEntities: { include: { entity: true } },
     },
-  }) as ItemRow[];
+  })) as ItemRow[];
 
   const hasMore = items.length > limit;
   const pageItems = hasMore ? items.slice(0, limit) : items;
@@ -348,12 +360,7 @@ export async function getArchiveAllArticlesSortedPaginated(
 }
 
 export async function getArchiveTopStories(date: string, limit = 3): Promise<Article[]> {
-  const items = await querySnapshotItems(
-    date,
-    {},
-    { importanceScore: "desc" },
-    limit,
-  );
+  const items = await querySnapshotItems(date, {}, { importanceScore: "desc" }, limit);
   return items.map((item) => mapItemToArticle(item, absoluteTime));
 }
 
@@ -465,7 +472,11 @@ export async function getSavedArticles(): Promise<SavedGroup[]> {
       id: si.item.id,
       savedItemId: si.id,
       title: si.item.title,
-      source: extractSourceName(si.item.url, si.item.rawEvent.source.name, si.item.rawEvent.source.type),
+      source: extractSourceName(
+        si.item.url,
+        si.item.rawEvent.source.name,
+        si.item.rawEvent.source.type,
+      ),
       publishedAt: relativeTime(si.item.publishedAt),
       tags: (si.tags as string[] | null) ?? [],
     });

@@ -1,8 +1,8 @@
+import { Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Lock } from "lucide-react";
 
 export default function LoginPage() {
   return (
@@ -25,12 +25,7 @@ export default function LoginPage() {
               <Label htmlFor="password" className="text-sm text-gray-700">
                 パスワード
               </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className="h-10"
-              />
+              <Input id="password" type="password" placeholder="••••••••" className="h-10" />
             </div>
             <Button type="submit" className="w-full h-10 mt-2">
               ログイン

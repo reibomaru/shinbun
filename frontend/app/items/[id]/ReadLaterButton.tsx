@@ -1,8 +1,8 @@
 "use client";
 
+import { Check, Clock } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { Clock, Check } from "lucide-react";
 import { toggleSave } from "@/lib/actions";
 
 interface ReadLaterButtonProps {

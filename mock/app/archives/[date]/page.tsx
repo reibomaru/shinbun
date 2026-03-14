@@ -1,9 +1,9 @@
-import { ARTICLES, CATEGORY_COUNTS, ARCHIVE_DAYS } from "@/lib/mock-data";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { MasonryGrid } from "@/components/MasonryGrid";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
-import Link from "next/link";
+import { ARCHIVE_DAYS, ARTICLES, CATEGORY_COUNTS } from "@/lib/mock-data";
 
 export function generateStaticParams() {
   return ARCHIVE_DAYS.map((day) => ({ date: day.date }));

@@ -1,12 +1,12 @@
 export const dynamic = "force-dynamic";
 
-import { getSavedArticles } from "@/lib/db/queries";
-import { removeSavedItem } from "@/lib/actions";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Clock, Tag, Trash2, Download, ChevronDown } from "lucide-react";
+import { ChevronDown, Clock, Download, Tag, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { removeSavedItem } from "@/lib/actions";
+import { getSavedArticles } from "@/lib/db/queries";
 
 export default async function SavedPage() {
   const savedGroups = await getSavedArticles();
@@ -69,11 +69,7 @@ export default async function SavedPage() {
                         {/* Tags */}
                         <div className="flex flex-wrap items-center gap-1">
                           {item.tags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="text-xs h-5 px-2"
-                            >
+                            <Badge key={tag} variant="secondary" className="text-xs h-5 px-2">
                               {tag}
                             </Badge>
                           ))}

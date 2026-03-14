@@ -1,9 +1,9 @@
-import { SAVED_ARTICLES } from "@/lib/mock-data";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Clock, Tag, Trash2, Download, ChevronDown } from "lucide-react";
+import { ChevronDown, Clock, Download, Tag, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { SAVED_ARTICLES } from "@/lib/mock-data";
 
 export default function SavedPage() {
   const totalCount = SAVED_ARTICLES.reduce((sum, group) => sum + group.items.length, 0);
@@ -38,6 +38,7 @@ export default function SavedPage() {
         <span className="text-xs text-gray-500 self-center">タグ:</span>
         {["llm", "api", "frontend", "backend", "react", "serverless"].map((tag) => (
           <button
+            type="button"
             key={tag}
             className="text-xs px-3 py-2 min-h-[44px] sm:min-h-0 sm:py-1 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-colors"
           >
@@ -78,11 +79,7 @@ export default function SavedPage() {
                         {/* Tags */}
                         <div className="flex flex-wrap items-center gap-1">
                           {item.tags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="text-xs h-5 px-2"
-                            >
+                            <Badge key={tag} variant="secondary" className="text-xs h-5 px-2">
                               🏷 {tag}
                             </Badge>
                           ))}

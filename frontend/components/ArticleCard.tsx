@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Check, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import Link from "next/link";
+import { useState, useTransition } from "react";
+import { ScoreBadge } from "@/components/ScoreBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Article } from "@/lib/types";
-import { Clock, ChevronDown, ChevronUp, Check } from "lucide-react";
 import { toggleSave } from "@/lib/actions";
-import { ScoreBadge } from "@/components/ScoreBadge";
+import type { Article } from "@/lib/types";
 
 const TOPIC_COLORS: Record<string, string> = {
   genai: "bg-purple-100 text-purple-700",
@@ -68,10 +68,14 @@ export function ArticleCard({ article, compact = false, expanded = false }: Arti
       <CardContent className={compact ? "p-3" : "p-4"}>
         {/* Labels + Actions */}
         <div className="flex items-center gap-1.5 mb-2">
-          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}>
+          <span
+            className={`text-xs px-2.5 py-1 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}
+          >
             {TOPIC_LABELS[article.topic]}
           </span>
-          <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}>
+          <span
+            className={`text-xs px-2.5 py-1 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}
+          >
             {FORMAT_LABELS[article.format]}
           </span>
           <Badge variant="outline" className="text-xs py-1">
@@ -117,7 +121,9 @@ export function ArticleCard({ article, compact = false, expanded = false }: Arti
 
         {/* Title */}
         <Link href={`/items/${article.id}`}>
-          <h3 className={`font-semibold text-gray-900 leading-snug mb-1 cursor-pointer hover:text-blue-600 ${compact ? "text-sm" : "text-base"}`}>
+          <h3
+            className={`font-semibold text-gray-900 leading-snug mb-1 cursor-pointer hover:text-blue-600 ${compact ? "text-sm" : "text-base"}`}
+          >
             {article.title}
           </h3>
         </Link>
@@ -125,9 +131,7 @@ export function ArticleCard({ article, compact = false, expanded = false }: Arti
         {/* Summary */}
         {isOpen ? (
           <div className="mt-2 space-y-3">
-            <p className="text-sm text-gray-700 leading-relaxed">
-              {article.summaryMedium}
-            </p>
+            <p className="text-sm text-gray-700 leading-relaxed">{article.summaryMedium}</p>
             {article.keyPoints.length > 0 && (
               <ul className="space-y-1">
                 {article.keyPoints.map((point, i) => (
@@ -160,7 +164,6 @@ export function ArticleCard({ article, compact = false, expanded = false }: Arti
           </div>
           <ScoreBadge score={article.importanceScore} />
         </div>
-
       </CardContent>
     </Card>
   );

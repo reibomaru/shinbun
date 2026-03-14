@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { AlertTriangle, CheckCircle, ExternalLink } from "lucide-react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import type { Article } from "@/lib/mock-data";
 
@@ -64,12 +64,8 @@ export function UrgentAlertBanner({ articles }: { articles: Article[] }) {
                 {TOPIC_LABELS[article.topic] ?? article.topic}
               </Badge>
             </div>
-            <p className="text-sm font-semibold text-red-900">
-              {article.title}
-            </p>
-            <p className="text-xs text-red-700 mt-0.5">
-              {article.summaryShort}
-            </p>
+            <p className="text-sm font-semibold text-red-900">{article.title}</p>
+            <p className="text-xs text-red-700 mt-0.5">{article.summaryShort}</p>
           </div>
         </button>
       ))}
@@ -95,9 +91,7 @@ export function UrgentAlertBanner({ articles }: { articles: Article[] }) {
                   {FORMAT_LABELS[selectedArticle.format] ?? selectedArticle.format}
                 </Badge>
               </div>
-              <DialogTitle className="text-red-900">
-                {selectedArticle.title}
-              </DialogTitle>
+              <DialogTitle className="text-red-900">{selectedArticle.title}</DialogTitle>
               <DialogDescription className="text-red-700">
                 {selectedArticle.source} · {selectedArticle.publishedAt} · ★{" "}
                 {selectedArticle.importanceScore}
@@ -120,10 +114,7 @@ export function UrgentAlertBanner({ articles }: { articles: Article[] }) {
                   </h4>
                   <ul className="space-y-1">
                     {selectedArticle.keyPoints.map((point, i) => (
-                      <li
-                        key={i}
-                        className="text-sm text-gray-700 flex items-start gap-2"
-                      >
+                      <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
                         <span className="text-red-400 mt-1.5 shrink-0 w-1 h-1 rounded-full bg-red-400" />
                         {point}
                       </li>
@@ -138,20 +129,13 @@ export function UrgentAlertBanner({ articles }: { articles: Article[] }) {
                   <h4 className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">
                     Why it matters
                   </h4>
-                  <p className="text-sm text-red-800">
-                    {selectedArticle.whyItMatters}
-                  </p>
+                  <p className="text-sm text-red-800">{selectedArticle.whyItMatters}</p>
                 </div>
               )}
             </div>
 
             <DialogFooter className="flex-col sm:flex-row gap-2 mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                asChild
-              >
+              <Button variant="outline" size="sm" className="gap-1.5" asChild>
                 <a href={selectedArticle.url} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-3.5 h-3.5" />
                   原文を読む

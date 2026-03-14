@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArticleCard } from "@/components/ArticleCard";
-import { Article } from "@/lib/mock-data";
+import type { Article } from "@/lib/mock-data";
 
 interface MasonryGridProps {
   articles: Article[];
@@ -40,7 +40,12 @@ export function MasonryGrid({ articles, useAbsoluteTime = false }: MasonryGridPr
       {columns.map((col, colIndex) => (
         <div key={colIndex} className="flex flex-col gap-3">
           {col.map((article) => (
-            <ArticleCard key={article.id} article={article} expanded useAbsoluteTime={useAbsoluteTime} />
+            <ArticleCard
+              key={article.id}
+              article={article}
+              expanded
+              useAbsoluteTime={useAbsoluteTime}
+            />
           ))}
         </div>
       ))}
