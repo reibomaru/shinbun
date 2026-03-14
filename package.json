@@ -43,6 +43,12 @@
     "backend/**/*.ts": [
       "biome check --fix",
       "biome format --write"
+    ],
+    "mock/**/*.{ts,tsx}": [
+      "pnpm --filter mock lint"
+    ],
+    "frontend/**/*.{ts,tsx}": [
+      "pnpm --filter shinbun-frontend lint"
     ]
   }
 }
