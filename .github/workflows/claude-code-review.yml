@@ -32,7 +32,7 @@ jobs:
             - DB スキーマ / バックエンド / バッチ処理 → docs/ai_tech_daily_aggregator_technical_design.md
             - 機能仕様 / ユーザーフロー → docs/ai_tech_daily_aggregator_prd_v_2.md
             乖離がある場合は「設計書の更新が必要」と明示し、具体的にどの箇所を更新すべきか指摘してください。
-          allowed_tools: "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(jq:*),Read,Glob,Grep,Task,WebFetch,Agent,Skill"
+          claude_args: "--allowedTools Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(jq:*),Read,Glob,Grep,Task,WebFetch,Agent,Skill"
           plugins: |
             review-pr@agent-plugins
           plugin_marketplaces: |
