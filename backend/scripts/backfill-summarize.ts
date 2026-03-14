@@ -2,11 +2,15 @@
  * content未設定の過去記事をClaude CLIで再要約するスクリプト
  *
  * Usage:
- *   bun backend/scripts/backfill-summarize.ts              # 全件処理
- *   bun backend/scripts/backfill-summarize.ts --dry-run    # 対象一覧のみ表示
- *   bun backend/scripts/backfill-summarize.ts --limit 5    # 最大5件のみ処理
+ *   pnpm run backfill-summarize                  # 全件処理
+ *   pnpm run backfill-summarize -- --dry-run     # 対象一覧のみ表示
+ *   pnpm run backfill-summarize -- --limit 5     # 最大5件のみ処理
  */
-import { $ } from "bun";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
+
 import { prisma } from "../lib/db/client.js";
 import { extractArticleText } from "../lib/fetchers/extract-content.js";
 
@@ -116,7 +120,12 @@ async function main() {
 
     let summary: SummaryResult;
     try {
-      const result = await $`claude -p --model claude-sonnet-4-6 ${prompt}`.text();
+      const { stdout: result } = await execFileAsync("claude", [
+        "-p",
+        "--model",
+        "claude-sonnet-4-6",
+        prompt,
+      ]);
 
       // claude -p の出力からJSONを抽出
       const jsonMatch = result.match(/\{[\s\S]*\}/);
@@ -188,7 +197,7 @@ async function main() {
 
     // レート制限対策
     if (i < processCount - 1) {
-      await Bun.sleep(SLEEP_SEC * 1000);
+      await new Promise((resolve) => setTimeout(resolve, SLEEP_SEC * 1000));
     }
   }
 
