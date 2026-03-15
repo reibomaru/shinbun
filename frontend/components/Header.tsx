@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Archive, Clock, LayoutDashboard, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Clock, LayoutDashboard, Archive, Menu, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export function Header() {
   const pathname = usePathname();
@@ -26,7 +26,11 @@ export function Header() {
         </Button>
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0" onClick={() => setMobileMenuOpen(false)}>
+        <Link
+          href="/"
+          className="flex items-center gap-2 shrink-0"
+          onClick={() => setMobileMenuOpen(false)}
+        >
           <span className="text-lg font-bold text-gray-900 tracking-tight">
             <span className="hidden sm:inline">📰 AI Tech Daily</span>
             <span className="sm:hidden">📰</span>
@@ -71,16 +75,17 @@ export function Header() {
         <div className="flex-1 max-w-sm ml-auto">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="記事を検索..."
-              className="pl-8 h-9 text-sm bg-gray-50"
-            />
+            <Input placeholder="記事を検索..." className="pl-8 h-9 text-sm bg-gray-50" />
           </div>
         </div>
 
         {/* Date (hidden on small screens) */}
         <span className="text-sm text-gray-500 shrink-0 hidden sm:inline">
-          {new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit" })}
+          {new Date().toLocaleDateString("ja-JP", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          })}
         </span>
       </div>
 

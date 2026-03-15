@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useTransition } from "react";
+import { Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { MasonryGrid } from "@/components/MasonryGrid";
 import type { Article, PaginatedArticles } from "@/lib/types";
-import { Loader2 } from "lucide-react";
 
 interface InfiniteScrollMasonryGridProps {
   initialArticles: Article[];

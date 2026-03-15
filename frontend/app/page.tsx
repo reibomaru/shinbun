@@ -1,15 +1,15 @@
 export const dynamic = "force-dynamic";
 
-import {
-  getUrgentArticles,
-  getAllArticlesSortedPaginated,
-  getCategoryCounts,
-} from "@/lib/db/queries";
+import { Filter } from "lucide-react";
 import { InfiniteScrollMasonryGrid } from "@/components/InfiniteScrollMasonryGrid";
 import { UrgentAlertBanner } from "@/components/UrgentAlertBanner";
 import { Button } from "@/components/ui/button";
-import { Filter } from "lucide-react";
 import { loadMoreArticles } from "@/lib/actions";
+import {
+  getAllArticlesSortedPaginated,
+  getCategoryCounts,
+  getUrgentArticles,
+} from "@/lib/db/queries";
 
 export default async function DashboardPage() {
   const [urgentArticles, paginated, counts] = await Promise.all([

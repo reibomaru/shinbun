@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { buildOrderByArray, scaleImportanceScore } from "./query-helpers";
 
 describe("buildOrderByArray", () => {
@@ -9,10 +9,7 @@ describe("buildOrderByArray", () => {
 
   it("builds array from single key orderBy with createdAt fallback", () => {
     const result = buildOrderByArray({ importanceScore: "desc" });
-    expect(result).toEqual([
-      { importanceScore: "desc" },
-      { createdAt: "desc" },
-    ]);
+    expect(result).toEqual([{ importanceScore: "desc" }, { createdAt: "desc" }]);
   });
 
   it("builds array from multiple keys preserving order", () => {

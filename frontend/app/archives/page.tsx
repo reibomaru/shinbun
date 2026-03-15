@@ -1,7 +1,7 @@
-import { getArchiveDates } from "@/lib/db/queries";
-import { Card, CardContent } from "@/components/ui/card";
-import { Newspaper, FileText } from "lucide-react";
+import { FileText, Newspaper } from "lucide-react";
 import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { getArchiveDates } from "@/lib/db/queries";
 
 export default async function ArchivesPage() {
   const archiveDays = await getArchiveDates();
@@ -43,7 +43,9 @@ export default async function ArchivesPage() {
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-lg font-bold text-gray-900">
                             {Number(m)}/{Number(d)}
-                            <span className="text-sm font-normal text-gray-400 ml-1">({day.dayOfWeek})</span>
+                            <span className="text-sm font-normal text-gray-400 ml-1">
+                              ({day.dayOfWeek})
+                            </span>
                           </span>
                           <div className="flex items-center gap-1 text-xs text-gray-500">
                             <FileText className="w-3.5 h-3.5" />
@@ -52,7 +54,10 @@ export default async function ArchivesPage() {
                         </div>
                         <ul className="space-y-1">
                           {day.titles.slice(0, 10).map((title, i) => (
-                            <li key={i} className="text-sm text-gray-700 truncate flex items-start gap-1.5">
+                            <li
+                              key={i}
+                              className="text-sm text-gray-700 truncate flex items-start gap-1.5"
+                            >
                               <span className="text-gray-400 shrink-0">・</span>
                               {title}
                             </li>

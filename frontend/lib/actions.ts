@@ -2,10 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "./db/client";
-import {
-  getAllArticlesSortedPaginated,
-  getArchiveAllArticlesSortedPaginated,
-} from "./db/queries";
+import { getAllArticlesSortedPaginated, getArchiveAllArticlesSortedPaginated } from "./db/queries";
 import type { PaginatedArticles } from "./types";
 
 export async function markAsRead(itemId: string) {
@@ -30,10 +27,7 @@ export async function toggleSave(itemId: string) {
   revalidatePath("/saved");
 }
 
-export async function submitFeedback(
-  itemId: string,
-  type: "helpful" | "not_helpful",
-) {
+export async function submitFeedback(itemId: string, type: "helpful" | "not_helpful") {
   await prisma.feedback.create({
     data: { itemId, feedbackType: type },
   });

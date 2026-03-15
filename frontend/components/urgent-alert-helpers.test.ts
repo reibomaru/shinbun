@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { getVisibleAlerts, dismissArticle, isSafeUrl } from "./urgent-alert-helpers";
+import { describe, expect, it } from "vitest";
 import type { Article } from "@/lib/types";
+import { dismissArticle, getVisibleAlerts, isSafeUrl } from "./urgent-alert-helpers";
 
 function makeArticle(id: string): Article {
   return {

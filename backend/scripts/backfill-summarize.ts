@@ -18,7 +18,7 @@ const LIMIT = limitIdx >= 0 ? Number(args[limitIdx + 1]) : 0;
 const sleepIdx = args.indexOf("--sleep");
 const SLEEP_SEC = sleepIdx >= 0 ? Number(args[sleepIdx + 1]) : 2;
 
-const SYSTEM_PROMPT = `You are a tech news summarizer for a Japanese audience.
+const _SYSTEM_PROMPT = `You are a tech news summarizer for a Japanese audience.
 Summarize the given article in Japanese.
 Respond with ONLY a JSON object (no markdown, no explanation).`;
 
@@ -105,7 +105,7 @@ async function main() {
         } else {
           console.log("  Content extraction returned null, continuing with title only");
         }
-      } catch (err) {
+      } catch (_err) {
         console.log("  Content extraction failed, continuing with title only");
       }
     }

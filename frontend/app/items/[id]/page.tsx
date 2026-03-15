@@ -1,20 +1,14 @@
-import { getArticleById } from "@/lib/db/queries";
-import { notFound } from "next/navigation";
+import { ArrowLeft, ExternalLink, FileText, Lightbulb, Tag } from "lucide-react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { MarkAsRead } from "@/components/MarkAsRead";
+import { ScoreBadge } from "@/components/ScoreBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
-import { MarkAsRead } from "@/components/MarkAsRead";
+import { Separator } from "@/components/ui/separator";
+import { getArticleById } from "@/lib/db/queries";
 import { ReadLaterButton } from "./ReadLaterButton";
-import { ScoreBadge } from "@/components/ScoreBadge";
-import {
-  ArrowLeft,
-  ExternalLink,
-  Lightbulb,
-  FileText,
-  Tag,
-} from "lucide-react";
 
 const TOPIC_COLORS: Record<string, string> = {
   genai: "bg-purple-100 text-purple-700",
@@ -48,11 +42,7 @@ const FORMAT_LABELS: Record<string, string> = {
   announcement: "Announcement",
 };
 
-export default async function ArticleDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ArticleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const article = await getArticleById(id);
   if (!article) notFound();
@@ -64,7 +54,11 @@ export default async function ArticleDetailPage({
       {/* Back nav + Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <Link href="/">
-          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900 h-11 sm:h-9">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-gray-500 hover:text-gray-900 h-11 sm:h-9"
+          >
             <ArrowLeft className="w-4 h-4 mr-1" />
             一覧へ
           </Button>
@@ -77,10 +71,14 @@ export default async function ArticleDetailPage({
         <CardContent className="pt-6">
           {/* Labels */}
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}>
+            <span
+              className={`text-xs px-2 py-1 rounded-full font-medium ${TOPIC_COLORS[article.topic]}`}
+            >
               {TOPIC_LABELS[article.topic]}
             </span>
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}>
+            <span
+              className={`text-xs px-2 py-1 rounded-full font-medium ${FORMAT_COLORS[article.format]}`}
+            >
               {FORMAT_LABELS[article.format]}
             </span>
             <Badge variant="outline" className="text-xs">
@@ -97,9 +95,7 @@ export default async function ArticleDetailPage({
           </p>
 
           {/* Title */}
-          <h1 className="text-2xl font-bold text-gray-900 leading-snug mb-6">
-            {article.title}
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 leading-snug mb-6">{article.title}</h1>
 
           <Separator className="mb-6" />
 
@@ -146,7 +142,10 @@ export default async function ArticleDetailPage({
       {/* Original link */}
       <Card className="mb-4">
         <CardContent className="py-4">
-          <a href={article.url} className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium">
+          <a
+            href={article.url}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+          >
             <ExternalLink className="w-4 h-4" />
             原文を読む
           </a>
