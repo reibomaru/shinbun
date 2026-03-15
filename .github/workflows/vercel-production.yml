@@ -37,7 +37,7 @@ jobs:
       - name: Promote to Production
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
-        run: vercel promote "$DEPLOYMENT_URL" --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel promote "$DEPLOYMENT_URL" --scope=${{ vars.VERCEL_ORG_ID }} --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Purge Caches
         uses: ./.github/actions/purge-cache
